@@ -283,8 +283,6 @@ const chooseSayraaVoice = (synth, lang = "hinglish") => {
     }
   }
 
-  // 4. No shared voice installed (e.g. only en-US exists) → native English female
-  //    voice with the sweet English prosody.
   return {
     voice: englishVoice,
     lang: "en-US",
@@ -293,8 +291,6 @@ const chooseSayraaVoice = (synth, lang = "hinglish") => {
   };
 };
 
-// Apply a chosen voice to an utterance, then re-apply prosody AFTER it, so a
-// pinned Hindi voice can never drag English into the flatter Hindi settings.
 const applyVoiceChoice = (utterance, choice) => {
   if (choice.voice) utterance.voice = choice.voice;
   if (choice.lang) utterance.lang = choice.lang;
@@ -303,10 +299,6 @@ const applyVoiceChoice = (utterance, choice) => {
   return choice;
 };
 
-// Speak a one-off line as soon as the (asynchronously loaded) voice list is
-// populated. Chrome/Edge load voices after mount and React.StrictMode re-runs
-// mount effects — which used to clobber the one-shot `onvoiceschanged` handler
-// and leave the greeting unsaid. Polling briefly is immune to both problems.
 const speakOnceVoicesReady = (speak, { attempts = 8, delay = 250 } = {}) => {
   if (typeof window === "undefined") return;
   let done = false;
@@ -446,12 +438,12 @@ const toEnglishLetters = (text) => {
       dropInherentA();
       out += ".";
     } else {
-      // Spaces, punctuation, Latin letters etc. end the current word
+      
       dropInherentA();
       out += ch;
     }
   }
-  dropInherentA(); // word ends at end of string
+  dropInherentA(); 
   return out;
 };
 // ---- End transliteration ----
@@ -462,19 +454,9 @@ const toEnglishLetters = (text) => {
 // The actual instruction + TTS voice are chosen per-message via languageDetect.js
 // inside sendMessage().
 
-// Local dev (the Vite dev server) has no serverless functions, and this repo has
-// no /api directory at all, so /api/chat can only ever return 404 here. Skipping
-// it on localhost removes the console 404 completely; the direct client-side
-// Gemini call below is what actually answers.
 // Sayraa's opening line. It is shown in the chat the moment the component
 // mounts, but it is SPOKEN only when the visitor actually opens the chatbot.
 const SAYRAA_WELCOME = "Namaste! Mein hoon Sayraa, Envistream EduSkill ka chatbot. Courses, training aur internships ke baare mein poochho! 😊";
-
-const IS_LOCAL_DEV =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "[::1]");
 
 const GEMINI_API_KEY =
   typeof process !== "undefined" && process.env
@@ -502,11 +484,6 @@ const Chat = ({ isOpen = false, onClose }) => {
   // Cloud (Gemini) mic session + silence-watch interval
   const cloudRecRef = useRef(null);
   const sensingTimerRef = useRef(null);
-  // Caches whether the optional serverless /api/chat route exists. This repo has
-  // no serverless function, so caching the "not there" answer stops the app from
-  // re-requesting it (and logging a 404 in the console) on every single message.
-  // null = not checked yet.
-  const serverChatRef = useRef(null);
 
   // NOTE: A FRESH SpeechRecognition instance is created on EVERY mic press
   // inside startListening(). Reusing a single instance created on mount is
@@ -604,16 +581,7 @@ const Chat = ({ isOpen = false, onClose }) => {
 
     const synth = window.speechSynthesis;
     if (synth) {
-      synth.onvoiceschanged = () => {
-        console.log("Voices loaded:", synth.getVoices());
-      };
-      // Console helpers for hand-tuning Sayraa's voice on this machine:
-      //   sayraaVoices()            → list every voice as "name (lang)"
-      //   sayraaUseVoice("Hazel")   → pin a voice by name (permanent)
-      //   sayraaUseVoice()          → back to automatic sweet-voice selection
-      //   sayraaVoiceMode("native") → English uses a native US/UK female voice
-      //   sayraaVoiceMode("match")  → English reuses the sweet Hinglish voice
-      // (default = "match", so both languages sound like the same sweet person)
+      synth.onvoiceschanged = () => {};
       window.sayraaVoices = () =>
         synth.getVoices().map((v) => `${v.name} (${v.lang})`);
       window.sayraaUseVoice = (name) => {
@@ -1319,53 +1287,11 @@ const Chat = ({ isOpen = false, onClose }) => {
       let aiText = "";
       let lastChatError = "";
 
-      // 1. Try secure serverless /api/chat first (API key is kept 100% private).
-      //    This repo has NO serverless route (no /api directory, and vercel.json
-      //    rewrites every path to index.html), so on localhost this could only
-      //    ever log a 404 — skip it there entirely, and cache the "not available"
-      //    answer anywhere else so it is never re-requested per message.
-      //
-      //    The reminder is only used on the client-side Gemini path. /api/chat
-      //    already enforces the language rule on the server side.
-      if (!IS_LOCAL_DEV && serverChatRef.current !== false) {
-        try {
-          const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              systemInstruction: `${medConfig.systemMessage}\n\n${languageInstruction}`,
-              contents: geminiContents,
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            aiText = (data.text || "").trim();
-            if (aiText) serverChatRef.current = true;
-          } else if (response.status === 404) {
-            // Serverless route not deployed (e.g. local dev) — remember that and
-            // silently fall through to the direct Gemini API call below.
-            serverChatRef.current = false;
-          } else {
-            const errData = await response.json().catch(() => ({}));
-            lastChatError = errData.error || `${response.status} - ${response.statusText}`;
-          }
-        } catch (e) {
-          // Network/proxy failure — remember it so we don't retry on every message
-          serverChatRef.current = false;
-          lastChatError = e?.message || String(e);
-        }
-      }
-
-      // 2. Fallback to direct client-side call if /api/chat failed and GEMINI_API_KEY is present
-      if (!aiText && !GEMINI_API_KEY) {
-        // No serverless route AND no local key — say so clearly instead of
-        // throwing an empty error message.
+      if (!GEMINI_API_KEY) {
+        // No local key — say so clearly instead of throwing an empty error message.
         lastChatError = "VITE_GEMINI_API_KEY is missing from client/.env";
       }
-      if (!aiText && GEMINI_API_KEY) {
+      if (GEMINI_API_KEY) {
         // Fastest-first, from measured latency with the real system prompt:
         //   gemini-flash-lite-latest ~1.6s (no thinking tokens)
         //   gemini-3.5-flash-lite    ~2.0s (no thinking tokens)

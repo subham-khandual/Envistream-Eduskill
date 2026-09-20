@@ -408,8 +408,6 @@ export default function PartnerCorporate({ onEnquire }) {
         </div>
       </section>
 
-
-
       {/* 4 — PARTNERSHIP FAQS & COLLABORATIONS */}
       <FaqSection
         onEnquire={onEnquire}

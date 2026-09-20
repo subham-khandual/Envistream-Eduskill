@@ -1,9 +1,4 @@
-/* ============================================================
-   chat.module.css  —  Sayraa AI Chatbot Popup Styles
-   Navy · Milky-Blue · White · Grey palette
-   ============================================================ */
 
-/* ---------- Outer container ---------- */
 .chatContainer {
   display: flex;
   flex-direction: column;
@@ -586,5 +581,4 @@
     height: 36px;
   }
 }
-
 

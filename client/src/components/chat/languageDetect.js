@@ -139,7 +139,6 @@ export const isHinglishText = (text) => {
   return false;
 };
 
-
 // with the detected reply language so English replies get a natural English
 // voice and Hinglish replies get the clearest Hindi female voice.
 // ---------------------------------------------------------------------------

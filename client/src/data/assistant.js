@@ -1,7 +1,4 @@
-/**
- * Eduskill AI Assistant Brain
- * Rule-based, context-grounded in Envistream EduSkill data.
- */
+
 
 export const QUICK_REPLIES = [
   "Explore Courses",

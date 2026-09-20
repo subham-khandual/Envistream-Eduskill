@@ -45,7 +45,6 @@ export default function About({ onEnquire }) {
     },
   ];
 
-
   // Authentic FAQs from the original envistream.org platform
   const ABOUT_FAQS = [
     {
@@ -130,7 +129,6 @@ export default function About({ onEnquire }) {
           </div>
         </div>
       </section>
-
 
       {/* =========================================================================
           SECTION 1 — OVERVIEW (WHITE BACKGROUND)

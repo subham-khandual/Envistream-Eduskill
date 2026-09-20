@@ -63,15 +63,6 @@ STRICT RULES:
 
 export const isGeminiSTTAvailable = () => true;
 
-// Local dev (the Vite dev server) has no serverless functions and this repo has
-// no /api directory, so /api/stt can only ever return 404 here. Skipping it on
-// localhost removes the console 404 and one wasted round-trip per recording.
-const IS_LOCAL_DEV =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "[::1]");
-
 // The modern mic APIs (MediaRecorder / FileReader) only exist in new browsers
 export const cloudMediaSupported = () =>
   typeof navigator !== "undefined" &&
@@ -243,25 +234,6 @@ export const transcribeWithGemini = async (blob) => {
   // Gemini requires clean MIME types without codec parameters.
   // Validate and normalise whatever the MediaRecorder produced.
   const mimeType = normalizeBlobMime(blob.type);
-
-  // 1. Try secure serverless /api/stt first (API key is kept 100% private).
-  //    Skipped on localhost where no such route can exist (this repo has no /api
-  //    directory), which previously logged a 404 on every single recording.
-  if (!IS_LOCAL_DEV) {
-    try {
-      const res = await fetch("/api/stt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mimeType, data }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        return json.text || "";
-      }
-    } catch (_) {
-      // serverless route unavailable, try direct fallback
-    }
-  }
 
   const call = async (model) => {
     const url =

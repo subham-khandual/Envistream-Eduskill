@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NEVER commit real secrets
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp restore worktree
+.restore-worktree/
+
+# OS / editor
+.DS_Store
+Thumbs.db
