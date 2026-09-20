@@ -1,0 +1,359 @@
+
+
+.transitionWrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at 50% 45%, #081534 0%, #04091a 45%, #02050e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  font-family: "Inter", sans-serif;
+  color: #ffffff;
+  will-change: transform, opacity;
+}
+
+/* Background Cyber Grid */
+.cyberGrid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 70%);
+  pointer-events: none;
+}
+
+/* Starlight Canvas */
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Dynamic Ambient Glows */
+.glowCyan {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.18) 0%, rgba(0, 229, 255, 0) 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  animation: pulseGlowCyan 4s ease-in-out infinite alternate;
+}
+
+.glowOrange {
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.18) 0%, rgba(255, 107, 0, 0) 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: pulseGlowOrange 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlowCyan {
+  0% { transform: scale(0.9) translate(-20px, -15px); opacity: 0.6; }
+  100% { transform: scale(1.18) translate(15px, 10px); opacity: 0.95; }
+}
+
+@keyframes pulseGlowOrange {
+  0% { transform: scale(1.15) translate(20px, 15px); opacity: 0.8; }
+  100% { transform: scale(0.85) translate(-15px, -10px); opacity: 0.5; }
+}
+
+/* Central Stage Container */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 16px;
+  max-width: 90vw;
+}
+
+/* Orbit Visualizer Wrapper */
+.orbitWrapper {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .orbitWrapper {
+    width: 380px;
+    height: 380px;
+  }
+}
+
+/* Sonic Ripples */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  animation: rippleExpand 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  pointer-events: none;
+}
+.ripple:nth-child(2) {
+  animation-delay: 1.5s;
+  border-color: rgba(255, 107, 0, 0.25);
+}
+
+@keyframes rippleExpand {
+  0% {
+    width: 140px;
+    height: 140px;
+    opacity: 0.8;
+    transform: scale(0.8);
+  }
+  100% {
+    width: 380px;
+    height: 380px;
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* Orbital Rings */
+.orbitRingSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.outerRingGroup {
+  transform-origin: center;
+  animation: rotateCw 18s linear infinite;
+}
+
+.innerRingGroup {
+  transform-origin: center;
+  animation: rotateCcw 13s linear infinite;
+}
+
+@keyframes rotateCw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes rotateCcw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* Logo Presentation Pedestal */
+.logoWrapper {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoPill {
+  position: relative;
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(0, 240, 255, 0.3),
+    0 0 60px rgba(255, 107, 0, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.logoPill:hover {
+  transform: scale(1.03);
+}
+
+.logoImg {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .logoImg {
+    height: 56px;
+  }
+}
+
+/* Specular Shimmer Streak */
+.shimmerBar {
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+  transform: rotate(28deg);
+  pointer-events: none;
+  animation: sweepShimmer 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes sweepShimmer {
+  0% { left: -90%; opacity: 0; }
+  15% { opacity: 0.9; }
+  45% { left: 140%; opacity: 0.9; }
+  46%, 100% { left: 140%; opacity: 0; }
+}
+
+/* Brand Motto */
+.mottoContainer {
+  margin-top: 24px;
+  text-align: center;
+  position: relative;
+  z-index: 20;
+}
+
+.brandEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #38bdf8;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  margin-bottom: 8px;
+}
+
+.mottoText {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #ffffff 0%, #ffedd5 40%, #ff9838 80%, #ff6b00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: block;
+  text-shadow: 0 0 20px rgba(255, 107, 0, 0.4);
+}
+
+@media (min-width: 640px) {
+  .mottoText {
+    font-size: 15px;
+    letter-spacing: 0.22em;
+  }
+}
+
+/* Progress Section */
+.progressSection {
+  margin-top: 26px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+}
+
+.progressTrack {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00f0ff 0%, #3b82f6 50%, #f97316 100%);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.8), 0 0 20px rgba(249, 115, 22, 0.6);
+  transition: width 0.1s linear;
+}
+
+.progressMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  font-family: monospace;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.progressPercent {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* Interactive Skip Button */
+.skipBtn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.skipBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(0, 240, 255, 0.45);
+  color: #ffffff;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(0, 240, 255, 0.3);
+}
+
+.skipBtn:active {
+  transform: translateY(0);
+}
