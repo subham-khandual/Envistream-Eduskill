@@ -440,10 +440,10 @@ export default function Resources({ onEnquire }) {
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link
-                  to="/verify"
+                  to="/contact"
                   className="btn-primary text-xs uppercase tracking-wider inline-flex items-center justify-center gap-2 w-fit"
                 >
-                  <span>Verify Credentials</span>
+                  <span>Contact Admissions</span>
                   <FiArrowRight size={14} />
                 </Link>
                 {onEnquire && (

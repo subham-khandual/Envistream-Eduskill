@@ -6,7 +6,6 @@ export const QUICK_REPLIES = [
   "Testing & Cypress",
   "AI & GenAI",
   "Fee & 0% EMIs",
-  "Verify Certificate"
 ];
 
 export function getAnswer(input) {
@@ -34,7 +33,7 @@ export function getAnswer(input) {
   if (has("place", "job", "career", "salary", "hiring", "package"))
     return { text: "Our placement cell provides ATS resume rewriting, 1-on-1 technical mock interviews, and direct referral drives with 120+ hiring partners.", link: ["/placement", "View Placement Program"] };
   if (has("certificate", "verify", "verification", "check"))
-    return { text: "Every certificate carries a unique encrypted ID verifiable by employers worldwide on our instant Verification Portal.", link: ["/verify", "Verify a Certificate"] };
+    return { text: "Every certificate carries a unique encrypted ID. Please contact our admissions team for certificate verification assistance." };
   if (has("corporate", "company", "b2b", "hr", "training for", "mou", "college", "partner"))
     return { text: "We partner with colleges for student internship MoUs & FDPs, and provide corporate upskilling in GenAI, QA, and Cloud.", link: ["/partner", "Partner With Us"] };
   if (has("address", "location", "office", "bhubaneswar", "where", "visit"))

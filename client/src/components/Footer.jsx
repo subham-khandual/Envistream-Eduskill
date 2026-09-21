@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import {
   FiFacebook, FiInstagram, FiLinkedin, FiYoutube, FiTwitter,
-  FiMail, FiPhone, FiMapPin, FiArrowRight, FiShield
+  FiMail, FiPhone, FiMapPin, FiArrowRight
 } from "react-icons/fi";
 import Logo from "./Logo";
 import FooterMap from "./FooterMap";
@@ -75,7 +75,6 @@ export default function Footer({ onEnquire }) {
             <li><Link to="/about" className="hover:text-white hover:translate-x-1 inline-block transition-all">About Envistream</Link></li>
             <li><Link to="/resources" className="hover:text-white hover:translate-x-1 inline-block transition-all">Resources & Knowledge Hub</Link></li>
             <li><Link to="/partner" className="hover:text-white hover:translate-x-1 inline-block transition-all">College & Corporate MoUs</Link></li>
-            <li><Link to="/verify" className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all"><FiShield className="text-[#34D399]" /> Certificate Verification</Link></li>
             <li><Link to="/contact" className="hover:text-white hover:translate-x-1 inline-block transition-all">Contact & Counselling</Link></li>
           </ul>
         </div>

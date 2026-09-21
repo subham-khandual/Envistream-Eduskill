@@ -14,7 +14,6 @@ import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
 import Internships from "./pages/Internships";
 import Placement from "./pages/Placement";
-import Verify from "./pages/Verify";
 import Contact from "./pages/Contact";
 import PartnerCorporate from "./pages/PartnerCorporate";
 import Resources from "./pages/Resources";
@@ -103,7 +102,6 @@ function Shell() {
           <Route path="/internships" element={<Internships onEnquire={openEnquire} />} />
           <Route path="/projects" element={<Internships onEnquire={openEnquire} />} />
           <Route path="/placement" element={<Placement onEnquire={openEnquire} />} />
-          <Route path="/verify" element={<Verify onEnquire={openEnquire} />} />
           <Route path="/contact" element={<Contact onEnquire={openEnquire} />} />
           <Route path="/partner" element={<PartnerCorporate onEnquire={openEnquire} />} />
           <Route path="/corporate" element={<PartnerCorporate onEnquire={openEnquire} />} />

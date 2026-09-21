@@ -1,4 +1,4 @@
-import { FiShield, FiPhone, FiArrowRight } from "react-icons/fi";
+import { FiPhone, FiArrowRight } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 export default function AnnouncementBanner() {
@@ -13,14 +13,6 @@ export default function AnnouncementBanner() {
 
         {/* Right actions: Verify Certificate, Phone & Partner With Us */}
         <div className="flex items-center gap-4 sm:gap-6 text-slate-300 text-[12px]">
-          <Link
-            to="/verify"
-            className="flex items-center gap-1.5 hover:text-white transition-colors"
-          >
-            <FiShield size={13} className="text-blue-300 shrink-0" />
-            <span>Verify Certificate</span>
-          </Link>
-
           <a
             href="tel:+919654453935"
             className="hidden md:flex items-center gap-1.5 hover:text-white transition-colors"
