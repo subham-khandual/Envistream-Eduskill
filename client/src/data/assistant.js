@@ -27,17 +27,17 @@ export function getAnswer(input) {
   if (has("fee", "emi", "price", "cost", "payment", "installment"))
     return { text: "Career programs start from ₹14,999 with 0% interest monthly EMI options available via UPI, cards, and net banking." };
   if (has("test", "qa", "selenium", "cypress", "automation"))
-    return { text: "Envistream provides Software Testing training covering Manual Testing and Automation Testing, plus modern Cypress E2E automation with live projects.", link: ["/courses/software-testing-automation", "View Testing Track"] };
+    return { text: "Software Testing evaluates software applications to detect bugs and ensure high performance. This course is available at Envistream EduSkill covering Manual Testing, Selenium, TestNG, and Cypress with live internships. 😊", link: ["/courses/software-testing-automation", "View Testing Track"] };
   if (has("sap", "erp", "fico", "mm", "sd", "abap", "pp", "hr"))
-    return { text: "Envistream offers SAP training in SAP SD, SAP FICO, SAP MM, SAP PP, SAP HR, and SAP ABAP with real-time practical implementation guidance.", link: ["/courses/erp-sap-training", "View SAP Track"] };
+    return { text: "SAP is a premier Enterprise Resource Planning software used to integrate finance, materials, and operations. This course is available at Envistream EduSkill covering SAP FICO, MM, SD, and ABAP with real-time enterprise training. 😊", link: ["/courses/erp-sap-training", "View SAP Track"] };
   if (has("ai", "ml", "genai", "llm", "rag", "artificial", "machine learning"))
-    return { text: "We offer comprehensive AI, Machine Learning, and Generative AI guidance covering Python, data processing, LLMs, prompt engineering, and building production chatbots.", link: ["/courses/artificial-intelligence", "View AI Program"] };
+    return { text: "Artificial Intelligence and Machine Learning enable computers to learn from data and perform intelligent tasks. This course is available at Envistream EduSkill covering Python, ML, GenAI, and AI agent projects. 😊", link: ["/courses/artificial-intelligence", "View AI Program"] };
   if (has("mern", "full stack", "react", "node", "javascript", "frontend", "backend"))
-    return { text: "Full-Stack Node.js and React.js training covers building modern web applications using React.js for the frontend and Node.js-based technologies for backend development.", link: ["/courses/full-stack-development", "View Full Stack Track"] };
+    return { text: "Web Development involves building modern responsive web apps using front-end and back-end tools. This course is available at Envistream EduSkill covering React.js, Node.js, Express, and MongoDB with live capstone projects. 😊", link: ["/courses/full-stack-development", "View Full Stack Track"] };
   if (has("python", "django", "fastapi"))
-    return { text: "Python Programming takes you from fundamental syntax to data analysis with NumPy & Pandas, web development, and machine learning algorithms.", link: ["/courses/python-programming", "View Python Track"] };
+    return { text: "Python is a versatile, high-level programming language widely used in Web Development, Data Science, and AI. This course is available at Envistream EduSkill with hands-on projects and internship certification. 😊", link: ["/courses/python-programming", "View Python Track"] };
   if (has("market", "seo", "aeo", "geo", "digital marketing", "bba", "mba", "ads", "lead gen", "business development"))
-    return { text: "Envistream offers management and business programs including Digital Marketing, SEO, Social Media Marketing, Market Research, Business Development, and Lead Generation.", link: ["/courses/digital-marketing-aeo", "View Digital Marketing"] };
+    return { text: "Digital Marketing leverages search engines, social media, and digital campaigns to build brands and acquire customers. This course is available at Envistream EduSkill covering SEO, AEO, and Google Ads. 😊", link: ["/courses/digital-marketing-aeo", "View Digital Marketing"] };
   if (has("intern", "stipend", "duration", "bput", "aicte"))
     return { text: "Envistream provides training and internship programs designed to align with the new AICTE and BPUT model syllabus for final-year students, combining practical learning with live projects.", link: ["/internships", "Explore Internships"] };
   if (has("place", "job", "career", "salary", "hiring", "package", "interview"))

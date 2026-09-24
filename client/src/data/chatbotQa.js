@@ -2078,7 +2078,7 @@ export const CHATBOT_QA_DATASET = [
       "Explain satellite",
       "Satellite",
     ],
-    answer: "This course is not in our courses. We offer courses like Web Development, Software Testing (Cypress), Python, Java, PHP, SAP/ERP, AI/ML, Data Science, and Digital Marketing. 😊",
+    answer: "A satellite is an object orbiting a planet or celestial body used for telecommunications, weather monitoring, and scientific observation.\nThis course is not in our courses; you can explore our other domains like Web Development, Python, Software Testing, SAP/ERP, or AI/ML. 😊",
     isOffTopic: true,
   },
   {
@@ -2418,6 +2418,392 @@ export const CHATBOT_QA_DATASET = [
     answer: "CI/CD stands for Continuous Integration and Continuous Deployment, which are practices used to automate the software delivery process.\nThis topic is not a part of our current curriculum. You can explore our other domains like Web Development, Software Testing, Python, Java, SAP/ERP, AI/ML, Data Science, or Digital Marketing — which domain would you like to know about? 😊",
     isOffTopic: false,
   },
+  // --- Available Core Courses (2-line explanation + available at Envistream EduSkill) ---
+  {
+    id: "hi_course_python",
+    intent: "course_python_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Python kya hai?",
+    variations: [
+      "Python kya hey",
+      "Python kya hota hai",
+      "Python ke bare mein batao",
+      "Python ke bare me batao",
+      "Python course kya hai",
+      "Python programming kya hai",
+      "Python seekhna hai",
+      "Python available hai kya",
+      "Python",
+    ],
+    answer: "Python ek versatile, high-level programming language hai jo Web Development, Data Science, Automation aur AI mein use hoti hai.\nYe course hamare yahan Envistream EduSkill mein available hai with hands-on projects, real-time training aur internship certification. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_python",
+    intent: "course_python_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Python?",
+    variations: [
+      "What is Python programming",
+      "Tell me about Python",
+      "About Python course",
+      "Is Python available",
+      "Python course details",
+    ],
+    answer: "Python is a versatile, high-level programming language widely used for Web Development, Data Science, Automation, and Artificial Intelligence.\nThis course is available at Envistream EduSkill featuring hands-on training, live industry projects, and internship certification. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_java",
+    intent: "course_java_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Java kya hai?",
+    variations: [
+      "Java kya hey",
+      "Java kya hota hai",
+      "Java ke bare mein batao",
+      "Java course kya hai",
+      "Java programming kya hai",
+      "Java available hai kya",
+      "Java",
+    ],
+    answer: "Java ek powerful, object-oriented programming language hai jo enterprise software, web applications aur backend development ke liye use hoti hai.\nYe course hamare yahan Envistream EduSkill mein available hai with hands-on practical training aur live internship projects. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_java",
+    intent: "course_java_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Java?",
+    variations: [
+      "What is Java programming",
+      "Tell me about Java",
+      "About Java course",
+      "Is Java course available",
+    ],
+    answer: "Java is a robust, object-oriented programming language widely used to build enterprise software, backend systems, and secure web applications.\nThis course is available at Envistream EduSkill with comprehensive practical training and live project internships. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_testing",
+    intent: "course_testing_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Software Testing kya hai?",
+    variations: [
+      "Software Testing kya hey",
+      "Testing kya hai",
+      "Testing kya hey",
+      "QA kya hai",
+      "Software Testing ke bare mein batao",
+      "Manual testing kya hai",
+      "Automation testing kya hai",
+    ],
+    answer: "Software Testing ek process hai jisse software applications ki quality, bugs aur functionality ko verify aur validate kiya jata hai.\nYe course hamare yahan Envistream EduSkill mein available hai covering Manual Testing, Selenium WebDriver, TestNG aur Jira live projects. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_testing",
+    intent: "course_testing_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Software Testing?",
+    variations: [
+      "Tell me about Software Testing",
+      "What is QA testing",
+      "Is software testing available",
+    ],
+    answer: "Software Testing is the practice of evaluating software applications to identify defects and ensure top quality and reliability.\nThis course is available at Envistream EduSkill covering Manual Testing, Selenium WebDriver, TestNG, API Testing, and live project internships. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_cypress",
+    intent: "course_cypress_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Cypress kya hai?",
+    variations: [
+      "Cypress kya hey",
+      "Cypress automation kya hai",
+      "Cypress testing kya hai",
+      "Cypress ke bare mein batao",
+    ],
+    answer: "Cypress ek modern, next-generation JavaScript front-end automation testing tool hai jo fast aur reliable end-to-end web testing provide karta hai.\nYe course hamare yahan Envistream EduSkill mein available hai with live hands-on web testing projects aur CI/CD integration. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_cypress",
+    intent: "course_cypress_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Cypress?",
+    variations: [
+      "Tell me about Cypress",
+      "What is Cypress automation",
+      "Is Cypress available",
+    ],
+    answer: "Cypress is a next-generation JavaScript-based end-to-end testing framework built for fast and reliable modern web application testing.\nThis course is available at Envistream EduSkill with hands-on test scripting, API mocking, and live project internship training. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_webdev",
+    intent: "course_webdev_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Web Development kya hai?",
+    variations: [
+      "Web development kya hey",
+      "Web dev kya hai",
+      "Full stack development kya hai",
+      "MERN stack kya hai",
+      "MERN kya hey",
+      "React kya hai",
+    ],
+    answer: "Web Development mein frontend aur backend technologies use karke interactive websites aur modern web applications banaye jate hain.\nYe course hamare yahan Envistream EduSkill mein available hai covering React.js, Node.js, Express, MongoDB aur live capstone projects. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_webdev",
+    intent: "course_webdev_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Web Development?",
+    variations: [
+      "What is MERN stack",
+      "Tell me about Web Development",
+      "Is Web Development available",
+    ],
+    answer: "Web Development involves designing and building dynamic web applications using modern front-end and back-end technologies.\nThis course is available at Envistream EduSkill covering React.js, Node.js, Express, MongoDB, and full-stack capstone projects with internship certification. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_aiml",
+    intent: "course_aiml_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "AI kya hai?",
+    variations: [
+      "AI kya hey",
+      "Artificial Intelligence kya hai",
+      "ML kya hai",
+      "Machine Learning kya hai",
+      "GenAI kya hai",
+      "AI ke bare mein batao",
+    ],
+    answer: "Artificial Intelligence aur Machine Learning se smart systems banaye jate hain jo data se seekhte hain aur intelligent tasks perform karte hain.\nYe course hamare yahan Envistream EduSkill mein available hai jisme Python, ML models, Deep Learning, GenAI aur RAG pipelines sikhaye jate hain. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_aiml",
+    intent: "course_aiml_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Artificial Intelligence?",
+    variations: [
+      "What is AI",
+      "What is Machine Learning",
+      "Tell me about AI course",
+      "Is AI available",
+    ],
+    answer: "Artificial Intelligence and Machine Learning enable computer systems to learn from data, discover patterns, and solve complex problems autonomously.\nThis course is available at Envistream EduSkill covering Python, Machine Learning, Deep Learning, Generative AI, and live AI projects. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_datascience",
+    intent: "course_datascience_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Data Science kya hai?",
+    variations: [
+      "Data Science kya hey",
+      "Data Analytics kya hai",
+      "Power BI kya hai",
+      "Data Science ke bare mein batao",
+    ],
+    answer: "Data Science mein data ko analyze karke business decisions ke liye useful insights, dashboards aur predictions nikale jate hain.\nYe course hamare yahan Envistream EduSkill mein available hai jisme SQL, Power BI, Python Pandas aur real business case studies sikhaye jate hain. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_datascience",
+    intent: "course_datascience_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Data Science?",
+    variations: [
+      "What is Data Analytics",
+      "Tell me about Data Science",
+      "Is Data Science available",
+    ],
+    answer: "Data Science combines statistical analysis, programming, and visualization to extract actionable business insights from raw data.\nThis course is available at Envistream EduSkill covering SQL, Power BI, Python Pandas, and interactive analytics dashboards. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_sap",
+    intent: "course_sap_info",
+    category: "SAP / ERP Courses",
+    language: "hinglish",
+    question: "SAP kya hai?",
+    variations: [
+      "SAP kya hey",
+      "ERP kya hai",
+      "SAP training kya hai",
+      "SAP ke bare mein batao",
+      "SAP FICO kya hai",
+      "SAP MM kya hai",
+    ],
+    answer: "SAP ek leading enterprise resource planning (ERP) software hai jo business processes jaise finance, supply chain aur operations ko integrate karta hai.\nYe course hamare yahan Envistream EduSkill mein available hai covering SAP FICO, SAP MM, SAP SD, SAP HR aur SAP ABAP practical training. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_sap",
+    intent: "course_sap_info",
+    category: "SAP / ERP Courses",
+    language: "english",
+    question: "What is SAP?",
+    variations: [
+      "Tell me about SAP ERP",
+      "What is ERP software",
+      "Is SAP training available",
+    ],
+    answer: "SAP is a premier Enterprise Resource Planning software used by global organizations to manage finance, materials, sales, and operations.\nThis course is available at Envistream EduSkill covering modules like SAP FICO, MM, SD, and SAP testing with real-time enterprise scenarios. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_digitalmarketing",
+    intent: "course_digitalmarketing_info",
+    category: "Management & Business Courses",
+    language: "hinglish",
+    question: "Digital Marketing kya hai?",
+    variations: [
+      "Digital Marketing kya hey",
+      "SEO kya hai",
+      "Digital marketing ke bare mein batao",
+    ],
+    answer: "Digital Marketing online channels jaise search engines, social media aur ads ke zariye products aur services ko promote karne ka field hai.\nYe course hamare yahan Envistream EduSkill mein available hai covering SEO, Google Ads, Social Media Marketing aur AI-powered AEO strategies. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_digitalmarketing",
+    intent: "course_digitalmarketing_info",
+    category: "Management & Business Courses",
+    language: "english",
+    question: "What is Digital Marketing?",
+    variations: [
+      "Tell me about Digital Marketing",
+      "What is SEO",
+      "Is Digital Marketing available",
+    ],
+    answer: "Digital Marketing utilizes digital channels such as search engines, social platforms, and targeted campaigns to grow brands and drive conversions.\nThis course is available at Envistream EduSkill covering SEO, AEO, Social Media Marketing, and performance ad campaigns. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_php",
+    intent: "course_php_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "PHP kya hai?",
+    variations: [
+      "PHP kya hey",
+      "PHP course kya hai",
+      "PHP ke bare mein batao",
+    ],
+    answer: "PHP ek popular open-source server-side scripting language hai jo dynamic websites aur backend database applications develop karne ke liye use hoti hai.\nYe course hamare yahan Envistream EduSkill mein available hai with MySQL, CRUD development aur live project training. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_php",
+    intent: "course_php_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is PHP?",
+    variations: [
+      "Tell me about PHP",
+      "Is PHP course available",
+    ],
+    answer: "PHP is a widely used server-side scripting language designed for creating dynamic and interactive web applications connected to databases.\nThis course is available at Envistream EduSkill covering PHP, MySQL, and full backend application development. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_course_cybersecurity",
+    intent: "course_cybersecurity_info",
+    category: "IT & Software Courses",
+    language: "hinglish",
+    question: "Cybersecurity kya hai?",
+    variations: [
+      "Cybersecurity kya hey",
+      "Ethical Hacking kya hai",
+      "Cybersecurity ke bare mein batao",
+    ],
+    answer: "Cybersecurity networks, systems aur data ko digital attacks aur unauthorized access se protect karne ki practice hai.\nYe course hamare yahan Envistream EduSkill mein available hai covering Network Security, OWASP Top 10, Kali Linux, Burp Suite aur live CTF labs. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "en_course_cybersecurity",
+    intent: "course_cybersecurity_info",
+    category: "IT & Software Courses",
+    language: "english",
+    question: "What is Cybersecurity?",
+    variations: [
+      "What is Ethical Hacking",
+      "Tell me about Cybersecurity",
+      "Is Cybersecurity available",
+    ],
+    answer: "Cybersecurity is the discipline of defending computer networks, devices, and sensitive data from cyber threats and unauthorized access.\nThis course is available at Envistream EduSkill covering Network Defense, Web Pentesting, Kali Linux, and SOC monitoring. 😊",
+    isOffTopic: false,
+  },
+  // --- Non-Curriculum Tech Topics (2-line explanation + NOT in our courses + explore domains) ---
+  {
+    id: "hi_tech_ec2",
+    intent: "tech_ec2_info",
+    category: "Technical Programming",
+    language: "hinglish",
+    question: "EC2 kya hai?",
+    variations: [
+      "EC2 kya hey",
+      "EC2 kya hota hai",
+      "What is EC2",
+      "Amazon EC2 kya hai",
+      "AWS EC2 kya hai",
+      "EC2",
+    ],
+    answer: "Amazon EC2 ek AWS cloud service hai jo scalable virtual servers provide karta hai applications run karne ke liye.\nYe course hamare courses mein nahi hai; aap hamare available domains jaise Web Development, Python, Software Testing, SAP/ERP ya AI/ML explore kar sakte hain. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_tech_ci",
+    intent: "tech_ci_info",
+    category: "Technical Programming",
+    language: "hinglish",
+    question: "CI kya hai?",
+    variations: [
+      "CI kya hey",
+      "Continuous Integration kya hai",
+      "CI ke bare mein batao",
+    ],
+    answer: "CI (Continuous Integration) software development practice hai jisme code changes automatically test aur integrate hote hain shared repository mein.\nYe course hamare courses mein nahi hai; aap hamare available domains jaise Web Development, Python, Software Testing, SAP/ERP ya AI/ML explore kar sakte hain. 😊",
+    isOffTopic: false,
+  },
+  {
+    id: "hi_tech_cicd",
+    intent: "tech_cicd_info",
+    category: "Technical Programming",
+    language: "hinglish",
+    question: "CI/CD kya hai?",
+    variations: [
+      "CI/CD kya hey",
+      "CICD kya hai",
+      "CICD kya hey",
+      "CI CD kya hai",
+      "CI CD kya hey",
+      "Continuous Integration and Continuous Deployment kya hai",
+    ],
+    answer: "CI/CD software engineering practice hai jisme code changes automatically test aur deploy hote hain automated software delivery ke liye.\nYe course hamare courses mein nahi hai; aap hamare available domains jaise Web Development, Python, Software Testing, SAP/ERP ya AI/ML explore kar sakte hain. 😊",
+    isOffTopic: false,
+  },
 
   // --- Hinglish Off-Topic ---
   {
@@ -2436,7 +2822,7 @@ export const CHATBOT_QA_DATASET = [
       "What is satellite",
       "What is a satellite",
     ],
-    answer: "Ye course hamare courses mein nahi hai. 😊 Hum Web Development, Software Testing, Python, Java, PHP, SAP/ERP, AI/ML, Data Science aur Digital Marketing provide karte hain.",
+    answer: "Satellite ek object hai jo space mein kisi planet ya star ke charo taraf ghoomta hai communication aur scientific research ke liye.\nYe course hamare courses mein nahi hai; aap hamare available domains jaise Web Development, Python, Software Testing, SAP/ERP ya AI/ML explore kar sakte hain. 😊",
     isOffTopic: true,
   },
   {
@@ -2749,9 +3135,16 @@ function normalizeText(text) {
     .trim();
 }
 
+const STOP_WORDS = new Set([
+  "kya", "hai", "hey", "h", "hota", "hote", "hoti", "hain", "tha", "the", "thi",
+  "batao", "bataiye", "bataona", "bataye", "ke", "ka", "ki", "ko", "se", "mein", "me",
+  "aur", "ya", "par", "pe", "karo", "karna", "baare", "bare", "kuch", "yeh", "ye", "woh",
+  "about", "tell", "me", "what", "is", "are", "the", "a", "an", "do", "does", "in", "of", "to", "for", "and", "or", "how"
+]);
+
 /**
  * Matches a user query against the QA dataset.
- * Supports exact question matching, variation matching, and token overlap scoring.
+ * Supports exact question matching, variation matching, and substantive keyword overlap scoring.
  *
  * @param {string} query The user's query
  * @param {"english"|"hinglish"} [langPreference] Optional language filter
@@ -2761,8 +3154,10 @@ export function findBestQaMatch(query, langPreference) {
   const normQuery = normalizeText(query);
   if (!normQuery) return null;
 
-  const queryWords = normQuery.split(" ").filter((w) => w.length > 2);
+  const queryWords = normQuery.split(" ").filter((w) => w.length > 1);
   if (queryWords.length === 0) return null;
+
+  const queryKeywords = queryWords.filter((w) => !STOP_WORDS.has(w));
 
   let bestMatch = null;
   let highestScore = 0;
@@ -2782,36 +3177,49 @@ export function findBestQaMatch(query, langPreference) {
       return item;
     }
 
-    // Token overlap score
-    let score = 0;
     const allPhrases = [normQ, ...(item.variations || []).map(normalizeText)];
 
     for (const phrase of allPhrases) {
-      const phraseWords = phrase.split(" ");
-      let matchedCount = 0;
-      for (const qw of queryWords) {
-        if (phraseWords.includes(qw)) {
-          matchedCount++;
+      const phraseWords = phrase.split(" ").filter((w) => w.length > 1);
+      const phraseKeywords = phraseWords.filter((w) => !STOP_WORDS.has(w));
+
+      // CRITICAL GUARD: Substantive keywords must match!
+      // If query has substantive keywords (e.g. "python"), and the phrase does NOT share any
+      // substantive keyword (e.g. phrase only has "satellite"), this phrase CANNOT match!
+      if (queryKeywords.length > 0) {
+        if (phraseKeywords.length === 0) continue;
+        const keywordOverlap = queryKeywords.filter((w) => phraseKeywords.includes(w)).length;
+        if (keywordOverlap === 0) {
+          continue;
+        }
+
+        // Substantive keyword overlap score (heavily weighted on real keywords)
+        const keywordScore = keywordOverlap / Math.max(queryKeywords.length, phraseKeywords.length);
+        
+        // Minor boost if all query keywords are present
+        const containmentBonus = queryKeywords.every((kw) => phraseKeywords.includes(kw)) ? 0.25 : 0;
+        
+        const finalScore = keywordScore + containmentBonus;
+        if (finalScore > highestScore) {
+          highestScore = finalScore;
+          bestMatch = item;
+        }
+      } else {
+        // Fallback for query containing only stop words
+        let matchedCount = 0;
+        for (const qw of queryWords) {
+          if (phraseWords.includes(qw)) matchedCount++;
+        }
+        const currentScore = matchedCount / Math.max(queryWords.length, phraseWords.length);
+        if (currentScore > highestScore) {
+          highestScore = currentScore;
+          bestMatch = item;
         }
       }
-      const currentScore = matchedCount / Math.max(queryWords.length, phraseWords.length);
-      if (currentScore > score) {
-        score = currentScore;
-      }
-    }
-
-    // Keyword containment bonuses
-    if (normQuery.includes(normQ) || normQ.includes(normQuery)) {
-      score += 0.4;
-    }
-
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = item;
     }
   }
 
-  // Threshold: only return if match confidence is sufficient
+  // Threshold: only return if substantive match confidence is sufficient
   if (highestScore >= 0.55) {
     return bestMatch;
   }
