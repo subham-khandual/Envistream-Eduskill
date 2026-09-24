@@ -6,13 +6,40 @@ import eduskillLogo from "../../assets/img/sayraa-logo.jpg";
 import chatBg from "../../assets/img/sayraa-bg.jpg";
 import { fixPhonetics } from "./phoneticFixes";
 import { isGeminiSTTAvailable, cloudMediaSupported, startCloudRecording, stopCloudRecording, transcribeWithGemini } from "./geminiStt";
+import { stopGeminiTTS, playWithGeminiTTS, isGeminiTTSAvailable } from "./geminiTts";
 import {
   getLanguageInstruction,
   getTurnReminder,
   getTtsVoice,
   isHinglishText,
   ENGLISH_ENFORCE_INSTRUCTION,
+  ENGLISH_TURN_REMINDER,
 } from "./languageDetect";
+import { findBestQaMatch } from "../../data/chatbotQa";
+
+// Heuristic check for common off-topic queries outside Envistream EduSkill's training scope
+const isOffTopicQuery = (text) => {
+  const t = String(text || "").toLowerCase().trim();
+  if (!t) return false;
+
+  // Space/astronomy/satellite terms (excluding IT uses like 'whitespace', 'complexity', 'storage space', 'disk space')
+  const hasSpace = /\bspace\b/.test(t) && !/\b(white\s*space|complexity|disk|memory|storage|bar)\b/.test(t);
+
+  const offTopicPatterns = [
+    /\b(satellite|satellites|chandrayaan|isro|nasa|astronomy|solar system|black hole|astronaut|meteor|asteroid|galaxy|galaxies|telescope|rocket|rockets)\b/,
+    /\b(blockchain|crypto|cryptocurrency|bitcoin|ethereum|web3|solidity|smart contract)\b/,
+    /\b(graphic design|photoshop|illustrator|coreldraw|video editing|premiere pro|after effects|animation|vfx|3d max|blender|maya)\b/,
+    /\b(autocad|solidworks|catia|civil engineering|mechanical engineering|electrical engineering|robotics|hardware networking)\b/,
+    /\b(nursing|bpharma|dpharma|pharmacy|mbbs|medical|doctor|hospital|hotel management|aviation|cabin crew|pilot)\b/,
+    /\b(cricket|football|ipl|fifa|messi|ronaldo|virat kohli|dhoni|rohit sharma)\b/,
+    /\b(recipe|biryani|paneer recipe|pizza recipe|burger recipe|dinner idea|lunch idea|how to cook)\b/,
+    /\b(weather today|mausam kaisa|rain tomorrow|temperature today|barish hogi)\b/,
+    /\b(capital of|rajdhani kya|president of usa|president of america)\b/,
+    /\b(film recommend|movie recommend|favorite actor|favorite heroine|joke sunao|tell me a joke)\b/,
+  ];
+
+  return hasSpace || offTopicPatterns.some((pattern) => pattern.test(t));
+};
 
 // ---- Sweet female voice selection ----
 // Sayraa always speaks with a cute, sweet FEMALE voice — in English AND in
@@ -459,11 +486,14 @@ const toEnglishLetters = (text) => {
 const SAYRAA_WELCOME = "Namaste! Mein hoon Sayraa, Envistream EduSkill ka chatbot. Courses, training aur internships ke baare mein poochho! 😊";
 
 const GEMINI_API_KEY =
-  typeof process !== "undefined" && process.env
-    ? process.env.VITE_GEMINI_API_KEY || process.env.REACT_APP_GEMINI_API_KEY || ""
-    : import.meta.env
-    ? import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.REACT_APP_GEMINI_API_KEY || ""
-    : "";
+  import.meta.env?.VITE_GEMINI_API_KEY ||
+  import.meta.env?.REACT_APP_GEMINI_API_KEY ||
+  (typeof process !== "undefined" && (process.env?.VITE_GEMINI_API_KEY || process.env?.REACT_APP_GEMINI_API_KEY)) ||
+  "";
+
+// Preferred chat model (overridable via VITE_GEMINI_CHAT_MODEL)
+const GEMINI_MODEL =
+  import.meta.env?.VITE_GEMINI_CHAT_MODEL || "gemini-3.1-flash-lite";
 
 const Chat = ({ isOpen = false, onClose }) => {
   const [userInput, setUserInput] = useState("");
@@ -484,32 +514,12 @@ const Chat = ({ isOpen = false, onClose }) => {
   // Cloud (Gemini) mic session + silence-watch interval
   const cloudRecRef = useRef(null);
   const sensingTimerRef = useRef(null);
+  // Guards the one-time English-retry inside sendMessage()
+  const didHinglishRetryRef = useRef(false);
 
-  // NOTE: A FRESH SpeechRecognition instance is created on EVERY mic press
-  // inside startListening(). Reusing a single instance created on mount is
-  // unreliable in Chrome — after the first use it often silently stops
-  // recognizing speech (this was the bug where the mic heard nothing).
-  // Speak a reply — picks the matching voice for the reply language:
-  //   "english" → natural English female voice
-  //   "hinglish" → clearest Hindi female voice (Sayraa's home language)
-  // `opts.append` = queue this utterance AFTER whatever is already speaking
-  // instead of cancelling it. Used for progressive speech: the first sentence of
-  // a long reply starts playing while the rest is still being generated.
-  const speakText = useCallback((text, lang = "hinglish", opts = {}) => {
-    const append = opts.append === true;
-
+  
+  const speakText = useCallback((text, lang = "hinglish") => {
     if (typeof window === 'undefined') return;
-
-    const synth = window.speechSynthesis;
-    if (!synth) {
-      console.warn("Speech synthesis not available.");
-      return;
-    }
-    // Cancel any ongoing speech immediately to avoid delays — but when the
-    // caller asked to APPEND (progressive speech), leave the current sentence
-    // playing and simply queue this one behind it.
-    const wasSpeaking = synth.speaking || synth.pending;
-    if (!append) synth.cancel();
 
     // Keep emojis on screen, but NEVER read them aloud ("smiling face" etc.)
     const spokenText = text
@@ -518,23 +528,27 @@ const Chat = ({ isOpen = false, onClose }) => {
         /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}]/gu,
         ""
       )
+      .replace(/[*#_~`>]/g, "")
       .replace(/\s{2,}/g, " ")
       .trim();
 
     if (!spokenText) return;
 
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      console.warn("Speech synthesis not available.");
+      return;
+    }
+
+    try {
+      synth.cancel();
+    } catch (_) {}
+
     const wantsHindi = lang !== "english";
-    // ONE decision point picks both the voice and its prosody, so English and
-    // Hinglish always share the same sweet tone.
     const choice = chooseSayraaVoice(synth, lang);
     const hasHindiVoice =
       !!choice.voice && (choice.lang || "").toLowerCase().startsWith("hi");
 
-    // Devanagari can ONLY be voiced by a Hindi voice. Sent to an English voice
-    // Chrome reads it as literally nothing — which is why Sayraa's Devanagari
-    // greeting used to be completely silent. So when no Hindi voice exists,
-    // transliterate the Devanagari into Roman Hinglish, which every voice can
-    // pronounce.
     let speakable = spokenText;
     if (wantsHindi && !hasHindiVoice && /[\u0900-\u097F]/.test(speakable)) {
       speakable = toEnglishLetters(speakable).replace(/\s{2,}/g, " ").trim();
@@ -542,15 +556,8 @@ const Chat = ({ isOpen = false, onClose }) => {
     }
 
     const utterance = new SpeechSynthesisUtterance(speakable);
-    // Applies voice + lang + sweet rate/pitch in one go.
     applyVoiceChoice(utterance, choice);
 
-    // Voice + language + sweet prosody were all applied by applyVoiceChoice()
-    // above — there is no separate English/Hinglish branch anymore, which is
-    // exactly what stops English from sounding flatter than Hinglish.
-
-    // If Chrome blocks speech until the user interacts (autoplay policy), retry
-    // once on the very first click / key press / tap.
     utterance.onerror = (e) => {
       const err = e?.error || "";
       if (err === "not-allowed" || err === "not_allowed") {
@@ -559,25 +566,47 @@ const Chat = ({ isOpen = false, onClose }) => {
       }
     };
 
-    if (append) {
-      // Nothing was cancelled, so the speech engine queues this utterance
-      // natively right behind the sentence that is currently playing.
-      synth.speak(utterance);
-    } else if (wasSpeaking) {
-      // Chrome sometimes swallows an utterance that starts in the same tick as
-      // cancel(), so give the engine a moment to flush the previous speech.
-      setTimeout(() => synth.speak(utterance), 80);
-    } else {
-      synth.speak(utterance);
-    }
+    setTimeout(() => {
+      try {
+        synth.speak(utterance);
+      } catch (e) {
+        console.warn("TTS speak failed:", e);
+      }
+    }, 40);
   }, []);
 
-  // Load messages from localStorage on mount
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("sayraaMessages");
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+  // Reset chat back to clean initial greetings state
+  const resetToGreeting = useCallback(() => {
+    const welcomeText = SAYRAA_WELCOME;
+    const initialMessages = [{
+      text: welcomeText,
+      sender: "ai",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }];
+    setMessages(initialMessages);
+    setConversationHistory([
+      {
+        role: "model",
+        parts: [{ text: welcomeText }],
+      },
+    ]);
+    setUserInput("");
+    setInterimText("");
+    setIsTyping(false);
+    setIsListening(false);
+    isListeningRef.current = false;
+    stopGeminiTTS();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
     }
+    try {
+      localStorage.removeItem("sayraaMessages");
+    } catch (_) {}
+  }, []);
+
+  // Clear any legacy saved messages on mount
+  useEffect(() => {
+    resetToGreeting();
 
     const synth = window.speechSynthesis;
     if (synth) {
@@ -607,7 +636,7 @@ const Chat = ({ isOpen = false, onClose }) => {
       };
     }
 
-  }, []);
+  }, [resetToGreeting]);
 
   const medConfig = {
     identity: {
@@ -629,90 +658,100 @@ const Chat = ({ isOpen = false, onClose }) => {
     },
     systemMessage: `Act as Sayraa, a smart and friendly AI learning guide at Envistream EduSkill (an IT training and internship institute in Bhubaneswar, Odisha).
 
+      PRIMARY SCOPE OF ENVISTREAM EDUSKILL (CRITICAL):
+      You are EXCLUSIVELY an assistant for Envistream EduSkill. Your primary scope is strictly limited to:
+      - Envistream EduSkill courses, training, internships, curriculum, batch timings, fees, certifications, and placement assistance.
+      - Institute location (Bhubaneswar, Odisha), contact details, 24x7 lab access, and daily doubt clearing.
+      - Software and IT training topics taught at Envistream EduSkill: Web Development (HTML, CSS, JavaScript, React.js, Node.js), Software Testing (Manual & Automation Testing with Cypress), Programming Languages (Python, Java, PHP/Laravel), SAP/ERP (SAP SD, SAP FICO, SAP MM, SAP PP, SAP HR, SAP ABAP), AI, ML, GenAI, Data Science (NumPy, Pandas, SQL), and Digital Marketing/SEO.
+
+      STRICT OFF-TOPIC REFUSAL RULE (HIGHEST PRIORITY):
+      - ANY topic that is NOT an Envistream EduSkill course or IT training program is STRICTLY OUT OF YOUR PRIMARY SCOPE!
+      - SATELLITES & SPACE ARE STRICTLY OUT OF SCOPE! Envistream EduSkill DOES NOT offer space, astronomy, or satellite courses. When asked "satellite kya hey", "satellite kya hai", "what is a satellite", "tell me about space", "solar system", etc., NEVER explain what a satellite or space object is!
+      - Other off-topic subjects include:
+        * General science, astronomy, physics, chemistry, biology, space, satellites, rockets, ISRO, NASA
+        * General knowledge, world leaders, country capitals, history, geography, oceans
+        * Entertainment, movies, actors, songs, jokes, storytelling
+        * Sports, cricket scores, players, football
+        * Weather forecasts, news, cooking recipes, food
+        * Personal questions (relationship, marriage, personal life)
+      - FOR ANY OFF-TOPIC QUESTION:
+        NEVER answer the question. NEVER explain the concept. NEVER give definitions or facts about off-topic subjects.
+        You MUST respond stating it is out of your primary scope:
+        * English: "This is outside my primary scope. I'm Sayraa, the Envistream EduSkill AI assistant. I can only assist with topics related to Envistream EduSkill courses, training, internships, live projects, and career guidance. 😊"
+        * Hinglish: "Ye question mere primary scope se bahar hai. 😊 Main Sayraa hoon, Envistream EduSkill ki AI assistant, aur main mainly Envistream EduSkill ke courses, training, internships, live projects aur career guidance mein help karti hoon."
+
       CORE BEHAVIOR RULES:
-       1. LANGUAGE: Mirror the user's language — reply in English when they write in English, and Hinglish (Hindi in Roman alphabet) when they write in Hinglish/Hindi. Never use Devanagari script. A specific per-message language instruction is appended to this system prompt each time.
-      2. BRANDING & NO SALES CTAs (CRITICAL):
-         - In the FIRST reply/interaction of the chat, mention "Envistream EduSkill" naturally (e.g., "Envistream EduSkill mein...").
+      1. LANGUAGE: Mirror the user's language — reply in English when they write in English, and Hinglish (Hindi in Roman alphabet) when they write in Hinglish/Hindi. Never use Devanagari script. A specific per-message language instruction is appended to this system prompt each time.
+      2. BRANDING & NATURAL TONE:
+         - In the FIRST reply/interaction of the chat, mention "Envistream EduSkill" naturally (e.g., "Envistream EduSkill mein..." or "Welcome to Envistream EduSkill!").
          - In SUBSEQUENT chat messages, it is NOT necessary to repeat "Envistream EduSkill" in every chat! Speak naturally using "hum", "hamare yahan", or answer directly without repeating the brand name every time.
          - NEVER add call-to-action (CTA) slogans like "detail ke liye Enquire Now dabayein! 🚀", "Enroll Now pe click karein", "Apply Now dabayein", etc. Do NOT tell the user to click buttons or enquire.
-         - DO NOT append phone numbers (+91 7873489364), website links (www.envistream.org), or sales pitches ("call karein...", "visit karein...") to everyday answers. Mention phone numbers or website ONLY when the user explicitly asks for contact info, calling, registration, or admission.
-      3. EXPLAINING TECH CONCEPTS ("X kya hai"):
-         - When the user asks what a technology or course topic is (e.g. "PHP kya hai", "Python kya hota hai", "Software testing kya hai", "React kya hai"):
-           * Step 1: Explain simply and clearly in 1-2 lines what that technology is and where it is used.
-           * Step 2: In 1 short line, mention that practical training and live project internship is available (use "Envistream EduSkill" in the first chat, and "hamare yahan" in subsequent chats).
-           * Example for first chat "PHP kya hai": "PHP ek popular server-side scripting language hai jo dynamic websites aur web apps banane ke liye use hoti hai. Envistream EduSkill mein iska Laravel ke sath practical training aur live project internship available hai. Iske baare mein aur jaanna hai? 😊"
-           * Example for follow-up "Python kya hai": "Python ek versatile programming language hai jo AI, data science aur web development mein use hoti hai. Hamare yahan iska bhi complete practical training aur live project internship available hai. 😊"
-      4. KEEP ANSWERS SHORT & NATURAL: Maximum 2-3 short lines. Never write marketing pitches, CTA slogans, or big paragraphs.
-      5. For "courses kya hai" type questions, reply with just the course names in 1-2 lines (comma separated). Give full details ONLY when the user asks about ONE specific course.
-      6. For location questions, reply ONLY with the address in 1-2 lines. Do NOT include phone number or call instructions unless specifically asked for contact/calling details.
-      7. VOICE INPUT: user messages often come from a speech recognizer and contain PHONETIC spelling mistakes (e.g. 'korsej kya provaaid karte ho' = 'Courses kya provide karte ho'; 'lokeshan kahan hai' = 'Location kahan hai'). Silently understand the intended meaning and answer normally.
-      8. OFF-TOPIC: If the user asks completely unrelated topics (movies, politics, cricket, jokes, cooking), politely refuse: "Main courses, training aur internships ke baare mein guide karti hoon! Iske related kuchh poochhna hai? 😊"
-      9. When asked "tumhe kon banaya hai" respond: "Mujhe Envistream EduSkill ki team ne banaya hai 🧑💻"
+         - DO NOT append phone numbers (+91 7873489364), website links (www.envistream.org), or sales pitches to everyday answers. Mention phone numbers or website ONLY when the user explicitly asks for contact info, calling, registration, or admission.
+      3. COURSE QUERIES & TECH CONCEPTS ("X kya hai", "What is X", "X course hai kya?"):
+         - When asked about ANY course or technology:
+           * CASE A — IF THE COURSE IS OFFERED AT ENVISTREAM EDUSKILL (Web Development, React, Node.js, Software Testing, Cypress, Python, Java, PHP/Laravel, SAP/ERP, AI/ML, Data Science, Digital Marketing):
+             Give strictly a 2-LINE ANSWER (never more than 2 lines, no marketing paragraphs):
+             - Line 1: Simple 1-line explanation of what that course/technology is.
+             - Line 2: In 1 short line, mention that hands-on practical training with live project internship is available (use "Envistream EduSkill" in the first chat, and "hamare yahan" in subsequent chats).
+           * CASE B — IF THE TECH CONCEPT/SERVICE IS NOT IN OUR CURRENT CURRICULUM (e.g., CI/CD, EC2, AWS, Docker, Kubernetes, Blockchain, Flutter, Kotlin, etc.):
+             Strictly give an EXACT 2-LINE ANSWER:
+             - Line 1: A clear 1-line explanation of what that technology/service is.
+             - Line 2: State that this topic is not part of our current curriculum and invite the user to explore other domains:
+               * English: "This topic is not a part of our current curriculum. You can explore our other domains like Web Development, Software Testing, Python, Java, SAP/ERP, AI/ML, Data Science, or Digital Marketing — which domain would you like to know about? 😊"
+               * Hinglish: "Ye topic hamare current curriculum ka part nahi hai. Aap hamare doosre domains jaise Web Development, Software Testing, Python, Java, SAP/ERP, AI/ML, Data Science ya Digital Marketing explore kar sakte hain — aap kis domain ke baare mein jaanna chahenge? 😊"
+           * CASE C — IF THE SUBJECT IS NOT AN IT COURSE AT ALL (e.g., satellite, space, general science, medical, etc.):
+             Directly state that this is not in our courses in 2 lines:
+             - English: "This course is not in our courses. We offer programs in Web Development, Software Testing, Python, Java, PHP, SAP/ERP, AI/ML, Data Science, and Digital Marketing. 😊"
+             - Hinglish: "Ye course hamare courses mein nahi hai. 😊 Hum Web Development, Software Testing, Python, Java, PHP, SAP/ERP, AI/ML, Data Science aur Digital Marketing provide karte hain."
+      4. PROGRAMMING & TECHNICAL QUESTIONS (WITHIN IT CURRICULUM):
+         - Answer coding/technical queries ONLY if they are part of Envistream's software courses (Python code, JavaScript promises, React hooks, Cypress tests, SQL queries, ML algorithms).
+         - Non-software engineering/science questions (satellite orbits, astrophysics, hardware electronics) are strictly OFF-TOPIC.
+      5. KEEP ANSWERS SHORT & NATURAL: Maximum 2 short lines. Never write marketing pitches, CTA slogans, or big paragraphs.
+      6. For "courses kya hai" type questions, reply with just the course names in 1-2 lines (comma separated). Give full details ONLY when the user asks about ONE specific course.
+      7. For location questions, reply ONLY with the address in 1-2 lines. Do NOT include phone number or call instructions unless specifically asked for contact/calling details.
+      8. VOICE INPUT: user messages often come from a speech recognizer and contain PHONETIC spelling mistakes (e.g. 'korsej kya provaaid karte ho' = 'Courses kya provide karte ho'; 'lokeshan kahan hai' = 'Location kahan hai'). Silently understand the intended meaning and answer normally.
+      9. When asked "tumhe kon banaya hai" / "who made you" respond: "Mujhe Envistream EduSkill ki team ne banaya hai 🧑💻" / "I was built by the Envistream EduSkill team 🧑💻".
 
       KNOWLEDGE BASE:
-      - IT Training / CSE Programs: Software Testing (manual + automation testing for QA), Cypress Automation (web automation with Cypress and JavaScript), ERP/SAP Training, SAP Testing, Web Development (HTML, CSS, JavaScript, jQuery, Bootstrap), Node.js & React.js (full-stack web apps), Digital Marketing (AI SEO, SEM, social media), Artificial Intelligence, PHP (with Laravel), Python, Java.
-      - BBA/MBA Programs: Digital Marketing, SEO Training, Social Media Marketing, Market Research, Business Development, Lead Generation.
-      - Projects offered: PHP projects (e.g., Chatbot for Students, College Admission Prediction System), Web Development projects (e.g., One-Page Layout, Product Landing Page), Python projects (e.g., Games, Automation apps), Java projects (e.g., Airline Reservation System, Course Management System).
-      - Benefits: Technical workshops, 24x7 lab facility, experienced trainers from top MNCs, live project experience, placement assistance, mock interviews.
-      - Location: Plot-N6/454, 2nd floor, Saffire Building, Opposite- Crown Hotel, IRC Village, Nayapalli, Bhubaneswar, Odisha.
-      - Contact (give ONLY when asked): Phone: +91 7873489364 / +91 9078419012. Email: training@envistream.org. Website: www.envistream.org
-
-      Examples:
-      User (First chat): "PHP kya hai?"
-      Response: "PHP ek popular server-side scripting language hai jo dynamic websites aur web applications banane ke liye use hoti hai. Envistream EduSkill mein iska Laravel ke sath live project training aur internship available hai. Iske baare mein aur jaanna hai? 😊"
-
-      User: "Courses kya hai?"
-      Response: "Software Testing, Cypress Automation, Web Development, PHP (Laravel), Python, Java, Node.js & React.js, Digital Marketing & AI, aur ERP/SAP. Kisi ek course ki detail chahiye? 😊"
-
-      User: "Location kya hai?"
-      Response: "Plot-N6/454, 2nd floor, Saffire Building, Opposite- Crown Hotel, IRC Village, Nayapalli, Bhubaneswar, Odisha. 😊"
-
-      User: "Internship kaise paun?"
-      Response: "Aap humari website www.envistream.org par enroll kar sakte hain ya call karein +91 7873489364 pe! 😊"`,
+      - Institute: Envistream EduSkill is an IT software training and internship institute located in Bhubaneswar, Odisha.
+      - Office & Location: Plot-N6/454, 2nd Floor, Saffire Building, opposite Crown Hotel, IRC Village, Nayapalli, Bhubaneswar, Odisha.
+      - Operating Hours: Monday through Saturday from 9:00 AM to 8:00 PM. (Operating schedule is Monday to Saturday, 9 AM to 8 PM).
+      - Training Modes: Virtual / Online (attend live training from home) and Classroom / Offline (at Bhubaneswar institute). Both modes offer practical learning; online offers flexibility, classroom offers in-person trainer/student interaction.
+      - Programs & Courses:
+        * IT & Software: Web Development (HTML, CSS, JavaScript), Full-Stack Node.js & React.js, Software Testing (Manual Testing & Automation Testing), Cypress Automation, Python, Java, PHP (Laravel).
+        * SAP / ERP: SAP SD (Sales and Distribution), SAP FICO (Financial Accounting & Controlling), SAP MM (Materials Management), SAP PP (Production Planning), SAP HR, and SAP ABAP (programming & customizations). Includes real-time implementation guidance.
+        * Management & Business: Digital Marketing, SEO Training, Social Media Marketing, Market Research, Business Development, Lead Generation.
+        * AI, ML, GenAI & Data Science: Artificial Intelligence, Machine Learning, Generative AI (LLMs, prompt engineering, building AI chatbots), Data Science (Python, NumPy, Pandas, statistics, SQL, visualization).
+      - Course Eligibility: Open to CS, IT, non-CS students, beginners with zero coding experience (start with HTML, CSS, JS fundamentals), college graduates, postgraduates, and final-year students.
+      - Internships: 4, 8, and 12-week mentor-led internships combining training with practical learning and project-oriented exposure. Designed to align with the new AICTE and BPUT model syllabus for final-year students fulfilling mandatory university internship requirements.
+      - Live Projects: Practical project exposure including PHP Chatbots, Java Airline Reservation Systems, Python Mad Libs Generators, Web Development landing pages. Projects can be added to resumes. Trainers provide guidance during projects.
+      - Lab & Student Support: 24x7 lab facilities allowing students to practice beyond regular training sessions, plus Daily Doubt Clearing Classes.
+      - Placement & Career Support: Dedicated Technical Placement Assistance and Campus Placement Program. Technical workshops, coding interview prep, intensive HR & job preparation training, and mock interviews with external panels and real-time HR professionals. Job guarantee policy: Placement assistance is provided, but a job cannot be guaranteed as selection depends on candidate skills, interview performance, eligibility, and employer requirements.
+      - Career Guidance: Helping students choose technologies based on background, and role paths (Frontend Developer, React Developer, Backend Developer, Full-Stack Developer, Web Developer, Data Analyst, Junior Data Scientist, ML Engineer).
+      - Contact Details (give ONLY when asked): Phone: +91 7873489364 / +91 9078419012. Email: training@envistream.org. Website: www.envistream.org`,
   };
 
+  // Handle chatbot opening/closing:
+  // - On close: clear past messages, cancel ongoing speech & listening so previous chat never persists
+  // - On open: speak welcome greeting
   useEffect(() => {
-    const welcomeText = SAYRAA_WELCOME;
-    const initialMessages = [{
-      text: welcomeText,
-      sender: "ai",
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }];
-    setMessages(initialMessages);
+    if (!isOpen) {
+      welcomeSpokenRef.current = false;
+      resetToGreeting();
+      return;
+    }
 
-    const initialHistory = [
-      {
-        role: "model",
-        parts: [{ text: welcomeText }],
-      },
-    ];
-    setConversationHistory(initialHistory);
-  }, []);
-
-  // Speak the greeting ONLY when the visitor actually OPENS the chatbot.
-  // ChatbotPopup keeps <Chat> mounted (hidden via display:none) even while the
-  // panel is closed, so speaking on mount made Sayraa greet people the instant
-  // the website loaded — before anyone opened the chat. Opening is also a real
-  // user gesture, which satisfies Chrome's autoplay policy for speech.
-  useEffect(() => {
-    if (!isOpen) return;
-    if (welcomeSpokenRef.current) return; // never greet twice
+    if (welcomeSpokenRef.current) return;
     welcomeSpokenRef.current = true;
-    // Speak the welcome in Roman Hinglish: a Devanagari string is silent on
-    // machines without a Hindi voice, so this keeps the greeting audible
-    // everywhere (and matches the bubble text on screen).
     speakOnceVoicesReady(() => speakText(SAYRAA_WELCOME, "hinglish"));
-  }, [isOpen, speakText]);
+  }, [isOpen, resetToGreeting, speakText]);
 
-  // Save messages to localStorage whenever they change
+  // Scroll to bottom when messages change
   useEffect(() => {
-    localStorage.setItem("sayraaMessages", JSON.stringify(messages));
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-// ================== AI mic (Gemini cloud speech-to-text) ==================
-  // Stops the recorder, sends the audio to Gemini and sends the transcript.
-  // Used both by the auto-silence detector and by pressing the mic again.
+
   const releaseCloudListen = () => {
     isListeningRef.current = false;
     setIsListening(false);
@@ -730,8 +769,8 @@ const Chat = ({ isOpen = false, onClose }) => {
     }
     stopEarlyRef.current = null;
 
-    // Keep the listening state ON so the "mein samajh rahi hoon..." bubble shows
-    setInterimText(" mein samajh rahi hoon... 🤖");
+    // Keep the listening state ON while audio finalizes
+    setInterimText("Processing... 🎙️");
 
     let blob;
     try {
@@ -772,8 +811,7 @@ const Chat = ({ isOpen = false, onClose }) => {
 
     releaseCloudListen();
 
-    // Romanize (in case the model returned Devanagari for Hindi speech) and
-    // apply the same phonetic safety net as the browser mic.
+
     const text = fixPhonetics(toEnglishLetters(transcript));
     if (text && text.trim()) sendMessage(text.trim());
   };
@@ -839,10 +877,7 @@ const Chat = ({ isOpen = false, onClose }) => {
           lastSound = Date.now();
         }
 
-        // Full sentence pause threshold: 1.1s silence after speaking, or 6s
-        // before the first word. (Was 2.0s — a full second of dead time added to
-        // EVERY voice question before transcription even started.)
-        const silenceThreshold = hasSpoken ? 1100 : 6000;
+        const silenceThreshold = hasSpoken ? 800 : 3500;
         if (Date.now() - lastSound > silenceThreshold) {
           if (sensingTimerRef.current) clearInterval(sensingTimerRef.current);
           try { audioCtx.close(); } catch (_) {}
@@ -878,17 +913,13 @@ const Chat = ({ isOpen = false, onClose }) => {
       window.speechSynthesis.cancel();
     }
 
-    // ---- AI (Gemini) live transcription — the accurate path ----
-    // When an API key is configured and the modern mic APIs exist, we record
-    // the audio and let Gemini transcribe it. This keeps the "Envistream
-    // EduSkill" brand name and other English words correct no matter how fast
-    // or slow the user speaks.
-    if (isGeminiSTTAvailable() && cloudMediaSupported()) {
-      beginCloudRecognition();
-      return;
-    }
-
+    // If browser does not have native SpeechRecognition, fall back to cloud Gemini STT
     if (!SpeechRecognition) {
+      if (isGeminiSTTAvailable() && cloudMediaSupported()) {
+        beginCloudRecognition();
+        return;
+      }
+
       setMessages((prev) => [
         ...prev,
         { text: "Is browser me speech recognition supported nahi hai! Chrome ya Edge browser use karo. 🎙️", sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
@@ -939,13 +970,12 @@ const Chat = ({ isOpen = false, onClose }) => {
         if (text) sendMessage(text);
       };
 
-      // Keep listening while you talk; wait ~1.2 seconds of silence before
-      // auto-sending so the speaker is never cut off mid-thought. (Was 2000ms —
-      // that was pure dead time on every single question. The user can also tap
+      // Keep listening while you talk; wait ~800ms of silence before
+      // auto-sending so the speaker is never cut off mid-thought. (The user can also tap
       // the mic icon again to send immediately.)
       const resetSilenceTimer = () => {
         if (silenceTimer) clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(sendTranscript, 1200);
+        silenceTimer = setTimeout(sendTranscript, 800);
       };
       stopEarlyRef.current = sendTranscript;
 
@@ -977,7 +1007,10 @@ const Chat = ({ isOpen = false, onClose }) => {
         const liveText = toEnglishLetters(
           (finalTranscript + " " + interim).replace(/\s+/g, " ").trim()
         );
-        if (liveText) setInterimText(liveText);
+        if (liveText) {
+          setInterimText(liveText);
+          setUserInput(liveText);
+        }
         // Still hearing speech → keep waiting for the rest of the sentence
         resetSilenceTimer();
       };
@@ -1054,13 +1087,7 @@ const Chat = ({ isOpen = false, onClose }) => {
       playListenTone();
     };
 
-    // Open the mic immediately with a gentle chime tone.
-    // We NO LONGER speak "Sun rahi hoon! Bol na" first because:
-    //  1. The bot speaking delayed the mic, making users talk too early
-    //     (their first words were cut off or not recorded).
-    //  2. Chrome's TTS audio channel collided with the mic recognizer,
-    //     causing missed words and distorted transcripts.
-    //  3. A quick chime tone provides instant feedback that the mic is ON.
+    
     beginRecognition();
   };
 
@@ -1071,12 +1098,8 @@ const Chat = ({ isOpen = false, onClose }) => {
 
   const deleteAllMessages = () => {
     if (window.confirm("Kya aap sach mein saare messages delete karna chahte ho?")) {
-      setMessages([]);
-      setConversationHistory([]);
-      localStorage.removeItem("sayraaMessages");
-      const clearMessage = `Saare messages delete ho gaye! Main nayi shuruaat ke liye taiyaar hoon! 😊`;
-      setMessages([{ text: clearMessage, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
-      speakText(clearMessage, "hinglish");
+      resetToGreeting();
+      speakText(SAYRAA_WELCOME, "hinglish");
     }
   };
 
@@ -1087,12 +1110,21 @@ const Chat = ({ isOpen = false, onClose }) => {
 
   const sendMessage = async (input = userInput) => {
     if (!input.trim()) return;
+    didHinglishRetryRef.current = false;
+
+    // Immediately stop any prior speech (e.g. welcome message still playing)
+    stopGeminiTTS();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+    }
 
     const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const newMessages = [...messages, { text: input, sender: "user", timestamp }];
     setMessages(newMessages);
     setUserInput("");
     setIsTyping(true);
+
+    let detectedLang = "hinglish";
 
     try {
 
@@ -1103,37 +1135,67 @@ const Chat = ({ isOpen = false, onClose }) => {
        // 3 out of 15 times). Append a reminder to the LAST user turn so the reply
        // actually matches the user's last message. This reminder is per-request only
        // and is never saved to the chat history.
-       const { lang: detectedLang, instruction: languageInstruction } =
-         getLanguageInstruction(input);
+       const langResult = getLanguageInstruction(input);
+       detectedLang = langResult.lang;
+       const languageInstruction = langResult.instruction;
        const replyVoice = getTtsVoice(detectedLang);
        const turnReminder = getTurnReminder(detectedLang);
 
-      // Build contents array for Gemini API.
-      // Only the most recent exchanges are sent — latency (and cost) grow with
-      // prompt size, so a long conversation no longer drags the entire history
-      // into every request. 8 messages = the last 4 exchanges.
+       // ⚡ FAST PATH: Instant response from grounded Q&A dataset (0ms latency!)
+       const instantMatch = findBestQaMatch(input, detectedLang);
+       if (instantMatch) {
+         const displayText = instantMatch.answer;
+         setConversationHistory((prev) => [
+           ...prev,
+           { role: "user", parts: [{ text: input }] },
+           { role: "model", parts: [{ text: displayText }] },
+         ]);
+         setMessages((prev) => [
+           ...prev,
+           { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+         ]);
+         speakText(displayText, replyVoice.voiceHint);
+         setIsTyping(false);
+         return;
+       }
+
+        // 🛑 OFF-TOPIC FAST GUARD: Questions strictly outside Envistream EduSkill scope
+        if (isOffTopicQuery(input)) {
+          const isCourseQuestion = /\b(course|courses|training|seekhna|padhate|karwate|offer|provide|learn)\b/i.test(input) || /kya hai|kya hey|kya hota|what is/i.test(input);
+          const offTopicText = isCourseQuestion
+            ? (detectedLang === "english"
+                ? "This course is not in our courses. We offer courses like Web Development, Software Testing (Cypress), Python, Java, PHP, SAP/ERP, AI/ML, Data Science, and Digital Marketing. 😊"
+                : "Ye course hamare courses mein nahi hai. 😊 Hum Web Development, Software Testing, Python, Java, PHP, SAP/ERP, AI/ML, Data Science aur Digital Marketing provide karte hain.")
+            : (detectedLang === "english"
+                ? "This is outside my primary scope. I'm Sayraa, the Envistream EduSkill AI assistant. I can only assist with topics related to Envistream EduSkill courses, training, internships, live projects, and career guidance. 😊"
+                : "Ye question mere primary scope se bahar hai. 😊 Main Sayraa hoon, Envistream EduSkill ki AI assistant, aur main mainly Envistream EduSkill ke courses, training, internships, live projects aur career guidance mein help karti hoon.");
+
+          setConversationHistory((prev) => [
+            ...prev,
+            { role: "user", parts: [{ text: input }] },
+            { role: "model", parts: [{ text: offTopicText }] },
+          ]);
+          setMessages((prev) => [
+            ...prev,
+            { text: offTopicText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+          ]);
+          speakText(offTopicText, replyVoice.voiceHint);
+          setIsTyping(false);
+          return;
+        }
+
+      // Build messages array for Google Gemini API
+      // Only the most recent exchanges are sent — latency grows with prompt size
       const HISTORY_LIMIT = 8;
       const geminiContents = [
         ...conversationHistory.slice(-HISTORY_LIMIT).map((msg) => ({
           role: msg.role === "model" ? "model" : "user",
-          parts: msg.parts,
+          parts: (msg.parts || [{ text: msg.text || "" }]).map((p) => typeof p === "string" ? { text: p } : p),
         })),
-        {
-          role: "user",
-          parts: [{ text: `${input}${turnReminder}` }],
-        },
+        { role: "user", parts: [{ text: `${input}${turnReminder}` }] },
       ];
 
-      // Shared request body for both the streaming and plain endpoints.
-      // NOTE ON maxOutputTokens: Gemini 3.x are THINKING models — they spend
-      // output tokens on internal reasoning (thoughtsTokenCount) BEFORE writing
-      // the answer. A small budget (the old 350) was entirely eaten by that
-      // reasoning and returned finishReason=MAX_TOKENS with empty text, which is
-      // what made Sayraa show "Typing..." and then never reply. 2048 leaves room
-      // for the thoughts plus the whole answer.
-      // (thinkingConfig.thinkingBudget = 0 is NOT an option: the API rejects it
-      // with HTTP 400 INVALID_ARGUMENT on gemini-3.5-flash-lite /
-      // gemini-flash-lite-latest — verified against the live API.)
+      // Shared request body for both the streaming and plain Gemini endpoints.
       const chatBody = {
         systemInstruction: {
           parts: [{ text: `${medConfig.systemMessage}\n\n${languageInstruction}` }],
@@ -1145,66 +1207,18 @@ const Chat = ({ isOpen = false, onClose }) => {
         },
       };
 
-      // Thinking models also emit "thought" parts — never show or speak those.
+      // Thinking models also emit "thought" parts — filter them out
       const partsToText = (candidate) =>
         (candidate?.content?.parts ?? [])
           .filter((p) => p.text && !p.thought)
           .map((p) => p.text)
           .join("");
 
-      // Progressive display: the reply bubble appears as soon as the first words
-      // arrive. Before this, the user stared at "Typing..." for the full ~2s and
-      // long answers felt like they had hung.
+      // Progressive display: the reply bubble appears as soon as the first words arrive.
       const aiMsgId = `ai-${Date.now()}`;
       let streamingStarted = false;
 
-      // ---- Progressive speech ----
-      // A long reply used to stay COMPLETELY silent until the whole answer had
-      // finished generating, because speakText only ran after the stream closed.
-      // Now each finished sentence is spoken as soon as it arrives, so Sayraa
-      // starts talking while the rest of the answer is still being written.
-      let spokenUpTo = 0;        // chars of the reply already given to the voice
-      let spokenAny = false;     // has any speech been queued for this reply?
-      const MIN_SPEAK_CHUNK = 24; // never speak fragments like "Hi."
-
-      // Index just past the LAST sentence terminator that is followed by
-      // whitespace or the end of the text (-1 when no sentence has finished).
-      const lastSentenceCut = (s) => {
-        const re = /[.?!।]/g;
-        let cut = -1;
-        let m;
-        while ((m = re.exec(s)) !== null) {
-          const next = s[m.index + 1];
-          if (next === undefined || /\s/.test(next)) cut = m.index + 1;
-        }
-        return cut;
-      };
-
-      const speakCompletedSentences = (fullText) => {
-        // Drain every sentence that has completed (a single chunk can contain
-        // more than one).
-        for (;;) {
-          const rest = fullText.slice(spokenUpTo);
-          const cut = lastSentenceCut(rest);
-          if (cut === -1) return;
-          const piece = rest.slice(0, cut).trim();
-          // Hold short fragments back so the next sentence joins them.
-          if (piece.length < MIN_SPEAK_CHUNK) return;
-          spokenUpTo += cut;
-          // The first chunk replaces any previous reply still being spoken; the
-          // following ones queue behind it instead of cutting it off.
-          speakText(piece, replyVoice.voiceHint, { append: spokenAny });
-          spokenAny = true;
-        }
-      };
-
       const showStreamed = (txt) => {
-        // Speak every sentence that has completed so far (no-op until one has).
-        try {
-          speakCompletedSentences(txt);
-        } catch (_) {
-          /* speech must never break the reply */
-        }
         if (!streamingStarted) {
           streamingStarted = true;
           setIsTyping(false);
@@ -1239,17 +1253,26 @@ const Chat = ({ isOpen = false, onClose }) => {
         return { ok: true, text: partsToText(data.candidates?.[0]).trim() };
       };
 
-      // Streaming call — first words render almost immediately instead of after
-      // the whole answer is generated.
-      const streamChat = async (model) => {
-        const res = await fetch(`${chatUrl(model, "streamGenerateContent")}&alt=sse`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chatBody),
-        });
+      // Streaming call — first words render almost immediately
+      const streamChat = async (model, body = chatBody) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        let res;
+        try {
+          res = await fetch(`${chatUrl(model, "streamGenerateContent")}&alt=sse`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+        } catch (err) {
+          clearTimeout(timeoutId);
+          return { ok: false, status: 0, body: err?.message || "timeout" };
+        }
+        clearTimeout(timeoutId);
         if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
         if (!res.body || typeof res.body.getReader !== "function") {
-          return plainChat(model); // no ReadableStream support → fall back
+          return plainChat(model, body);
         }
 
         const reader = res.body.getReader();
@@ -1277,7 +1300,7 @@ const Chat = ({ isOpen = false, onClose }) => {
                 showStreamed(text);
               }
             } catch (_) {
-              // Ignore a partial JSON line — the rest arrives in the next chunk.
+              // Ignore partial json chunk
             }
           }
         }
@@ -1288,74 +1311,62 @@ const Chat = ({ isOpen = false, onClose }) => {
       let lastChatError = "";
 
       if (!GEMINI_API_KEY) {
-        // No local key — say so clearly instead of throwing an empty error message.
         lastChatError = "VITE_GEMINI_API_KEY is missing from client/.env";
       }
       if (GEMINI_API_KEY) {
-        // Fastest-first, from measured latency with the real system prompt:
-        //   gemini-flash-lite-latest ~1.6s (no thinking tokens)
-        //   gemini-3.5-flash-lite    ~2.0s (no thinking tokens)
-        //   gemini-3.1-flash-lite    ~2.8s
-        //   gemini-3.5-flash         ~7.4s (thinking — last resort only)
-        // A lite model sometimes ignores the language instruction when there is a
-        // Hinglish welcome in the history — so every client-side attempt also has
-        // a per-turn reminder appended to the last user turn.
+        // Free & fast Gemini models:
+        // Prioritizes gemini-3.1-flash-lite, gemini-3.5-flash-lite, gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, gemini-3.5-flash
         const chatCandidateModels = [
-          "gemini-flash-lite-latest",
-          "gemini-3.5-flash-lite",
+          GEMINI_MODEL,
           "gemini-3.1-flash-lite",
+          "gemini-3.5-flash-lite",
+          "gemini-2.5-flash-lite",
+          "gemini-2.5-flash",
+          "gemini-2.0-flash-lite",
+          "gemini-2.0-flash",
+          "gemini-1.5-flash",
           "gemini-3.5-flash",
-        ];
+        ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
         for (const model of chatCandidateModels) {
           try {
             const { ok, status, body: respBody, text } = await streamChat(model);
-            if (ok) {
-              if (text) {
-                aiText = text;
-                break;
+            if (ok && text) {
+              if (
+                detectedLang === "english" &&
+                isHinglishText(text) &&
+                !didHinglishRetryRef.current
+              ) {
+                didHinglishRetryRef.current = true;
+                const retryBody = {
+                  ...chatBody,
+                  systemInstruction: {
+                    parts: [{ text: `${medConfig.systemMessage}\n\n${languageInstruction}\n\n${ENGLISH_ENFORCE_INSTRUCTION}` }],
+                  },
+                  contents: [
+                    ...geminiContents.slice(0, -1),
+                    { role: "user", parts: [{ text: `${input}${ENGLISH_TURN_REMINDER}` }] },
+                  ],
+                  generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+                };
+                const { ok: r2, text: t2 } = await streamChat(model, retryBody);
+                if (r2 && t2) {
+                  aiText = t2;
+                  break;
+                }
+                lastChatError = `${model} returned a Hinglish reply for an English message, then empty on retry`;
+                console.warn(`Chat model "${model}" returned Hinglish for an English message — retried with stronger reminder, then empty`);
+                continue;
               }
-              // A 200 with empty text means the model burned its whole output
-              // budget on thinking — try the next candidate instead of giving up.
+              aiText = text;
+              break;
+            }
+            if (ok) {
               lastChatError = `${model} returned an empty reply (out of tokens)`;
               console.warn(`Chat model "${model}" returned no text — trying next model...`);
               continue;
             }
             lastChatError = `${status} - ${String(respBody || "").slice(0, 300)}`;
-
-            // If this is an English request and the first lite model came back in
-            // Hinglish, retry it with a stronger per-turn reminder before falling
-            // back to the slow thinking model. Keep the turn reminder in the history
-            // so the reply is real English — even if the next model sees the failed
-            // Hinglish reply as part of the conversation.
-            if (
-              detectedLang === "english" &&
-              isHinglishText(aiText) &&
-              !didHinglishRetryRef.current
-            ) {
-              didHinglishRetryRef.current = true;
-              // Regex-substitute the reminder in case the cache still has the old
-              // version; the rest of the body stays the same.
-              const retryBody = {
-                ...chatBody,
-                systemInstruction: { parts: [{ text: `${medConfig.systemMessage}\n\n${languageInstruction}\n\n${ENGLISH_ENFORCE_INSTRUCTION}` }] },
-                contents: [
-                  ...conversationHistory.slice(-HISTORY_LIMIT).map((msg) => ({
-                    role: msg.role === "model" ? "model" : "user",
-                    parts: msg.parts,
-                  })),
-                  { role: "user", parts: [{ text: `${input}${ENGLISH_TURN_REMINDER}` }] },
-                ],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-              };
-              const { ok: r2, text: t2 } = await streamChat(model, retryBody);
-              if (r2 && t2) {
-                aiText = t2;
-                break;
-              }
-              lastChatError = `${model} returned a Hinglish reply for an English message, then empty on retry`;
-              console.warn(`Chat model "${model}" returned Hinglish for an English message — retried with stronger reminder, then empty`);
-            }
             console.warn(`Chat model "${model}" returned ${status} — trying next model...`);
           } catch (e) {
             lastChatError = `network error - ${e?.message || String(e)}`;
@@ -1364,7 +1375,16 @@ const Chat = ({ isOpen = false, onClose }) => {
         }
       }
 
-      if (!aiText) throw new Error(`Gemini API Error: ${lastChatError}`);
+      if (!aiText) {
+        // Fallback: Check if we have a matching answer in our official QA dataset
+        const localMatch = findBestQaMatch(input, detectedLang);
+        if (localMatch) {
+          aiText = localMatch.answer;
+        } else {
+          throw new Error(`Gemini API Error: ${lastChatError}`);
+        }
+      }
+
 
       // Display the AI reply as-is (English or Hinglish, matching the user's language)
       const displayText = aiText;
@@ -1388,23 +1408,28 @@ const Chat = ({ isOpen = false, onClose }) => {
         ]);
       }
 
-      // Speak whatever is left that progressive speech did not already speak:
-      // the trailing sentence (when streaming ran), or the whole reply (when
-      // streaming was unavailable). Never re-speak what is already queued.
-      const leftover = aiText.slice(spokenUpTo).trim();
-      if (leftover) {
-        speakText(leftover, replyVoice.voiceHint, { append: spokenAny });
-      } else if (!spokenAny) {
-        speakText(aiText, replyVoice.voiceHint);
-      }
+      // Speak the complete, natural response from start to finish in exact order
+      speakText(aiText, replyVoice.voiceHint);
     } catch (error) {
       console.error("API Error:", error);
-      const errorMessage = `Oops! Main abhi reply nahi kar payi 😅 Ek baar phir se try karo na...`;
-      setMessages((prev) => [
-        ...prev,
-        { text: errorMessage, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
-      ]);
-      speakText(errorMessage, "hinglish");
+      const localMatch = findBestQaMatch(input, detectedLang);
+      if (localMatch) {
+        const displayText = localMatch.answer;
+        setMessages((prev) => [
+          ...prev,
+          { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+        ]);
+        speakText(displayText, detectedLang === "english" ? "english" : "hinglish");
+      } else {
+        const errorMessage = detectedLang === "english"
+          ? "Oops! I couldn't reply right now 😅 Please try again in a moment..."
+          : `Oops! Main abhi reply nahi kar payi 😅 Ek baar phir se try karo na...`;
+        setMessages((prev) => [
+          ...prev,
+          { text: errorMessage, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+        ]);
+        speakText(errorMessage, detectedLang === "english" ? "english" : "hinglish");
+      }
     } finally {
       setIsTyping(false);
     }
@@ -1415,7 +1440,10 @@ const Chat = ({ isOpen = false, onClose }) => {
       <div className={styles.header}>
         <button
           className={styles.closeButton}
-          onClick={onClose}
+          onClick={() => {
+            resetToGreeting();
+            if (onClose) onClose();
+          }}
           title="Close Chat"
           aria-label="Close chat"
         >
@@ -1448,7 +1476,7 @@ const Chat = ({ isOpen = false, onClose }) => {
           </div>
         ))}
         {isTyping && <div className={styles.typing}>Typing...</div>}
-        {isListening && <div className={styles.typing}>🎙️ {interimText || "sun rahi hoon, bolte jao..."}</div>}
+        {isListening && <div className={styles.typing}>🎙️ {interimText || "Listening..."}</div>}
         <div ref={chatEndRef} />
       </div>
 
@@ -1468,13 +1496,13 @@ const Chat = ({ isOpen = false, onClose }) => {
           <input
             id="userInput"
             type="text"
-            placeholder="Apna message likho..."
+            placeholder={isListening ? "Listening..." : "Apna message likho..."}
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
             className={styles.inputField}
           />
-          {userInput.trim() ? (
+          {userInput.trim() && !isListening ? (
             <button
               id="sendButton"
               onClick={() => sendMessage()}
@@ -1487,7 +1515,7 @@ const Chat = ({ isOpen = false, onClose }) => {
               id="micButton"
               onClick={startListening}
               className={`${styles.micButton} ${isListening ? styles.micButtonListening : ""}`}
-              title={isListening ? "Sun rahi hoon! Click karke turant send karo 🎙️" : "Voice input ke liye click karo 🎤"}
+              title={isListening ? "Listening... Click karke turant send karo 🎙️" : "Voice input ke liye click karo 🎤"}
             >
               {isListening ? "🎙️" : "🎤"}
             </button>
