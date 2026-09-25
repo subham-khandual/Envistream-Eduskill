@@ -16,31 +16,36 @@ import {
   ENGLISH_TURN_REMINDER,
 } from "./languageDetect";
 import { findBestQaMatch } from "../../data/chatbotQa";
-import { getAnswer } from "../../data/assistant";
+import { getAnswer, isCodeRequest } from "../../data/assistant";
+
+// Dedicated regex for non-Envistream courses/trades
+export const OFF_TOPIC_COURSE_REGEX = /\b(nursing|gnm|anm|bsc\s*nursing|msc\s*nursing|b\s*pharma|b\.?pharma|d\s*pharma|d\.?pharma|m\s*pharma|m\.?pharma|bpharm|dpharm|mpharm|pharmacy|pharmacist|mbbs|bds|dentist|dental|surgery|surgeon|paramedical|physiotherapy|bpt|mpt|lab\s*technician|dmlt|bmlt|radiology|radiography|x-ray|dialysis|hospital\s*management|hospital\s*administration|healthcare\s*management|mha|ayurveda|bams|bhms|homeopathy|unani|bums|naturopathy|veterinary|bvsc|graphic\s*design(?:ing)?|graphics\s*design(?:ing)?|photoshop|illustrator|coreldraw|indesign|canva\s*course|dtp|desktop\s*publishing|video\s*editing|video\s*editor|premiere\s*pro|after\s*effects|final\s*cut\s*pro|davinci\s*resolve|animation|2d\s*animation|3d\s*animation|vfx|visual\s*effects|3ds?\s*max|blender|maya|unreal\s*engine|unity\s*3d|game\s*design|game\s*development|sound\s*engineering|audio\s*editing|audio\s*engineering|music\s*production|fl\s*studio|cubase|logic\s*pro|fashion\s*design(?:ing)?|interior\s*design(?:ing)?|textile\s*design|jewellery\s*design|jewelry\s*design|fine\s*arts|bfa|mfa|drawing\s*class|painting\s*class|photography\s*course|photography|cinematography|videography|autocad|solidworks|catia|ansys|creo|nx\s*cad|cnc\s*programming|hvac|revit|staad\s*pro|etabs|civil\s*(?:engineering|engineer|engg|diploma)?|mechanical\s*(?:engineering|engineer|engg|diploma)?|electrical\s*(?:engineering|engineer|engg|diploma)?|eee|electronics\s*(?:engineering|engineer|engg|diploma)?|extc|etc\s*engg|vlsi|pcb\s*design|embedded\s*(?:systems|hardware)|microcontroller|arduino|raspberry\s*pi|plc\s*scada|industrial\s*automation|instrumentation|automobile\s*(?:engineering|engineer|engg|diploma)?|automotive\s*(?:engineering|engineer|engg|diploma)?|aeronautical\s*(?:engineering|engineer|engg|diploma)?|aerospace\s*(?:engineering|engineer|engg|diploma)?|aviation\s*engineering|marine\s*(?:engineering|engineer|engg|diploma)?|mining\s*(?:engineering|engineer|engg|diploma)?|chemical\s*(?:engineering|engineer|engg|diploma)?|petroleum\s*(?:engineering|engineer|engg|diploma)?|biotechnology|bioinformatics|agricultural\s*engineering|food\s*technology|textile\s*engineering|iti|polytechnic|fitter|welder|welding|electrician|plumber|plumbing|carpenter|carpentry|machinist|turner|draughtsman|diesel\s*mechanic|wireman|tool\s*and\s*die|rac\s*technician|aviation|commercial\s*pilot|pilot\s*(?:training|course|license|banna)?|cpl|cabin\s*crew|air\s*hostess|ground\s*staff|airport\s*management|flight\s*attendant|flight\s*steward|hotel\s*management|hospitality\s*management|culinary\s*(?:arts)?|cooking\s*(?:classes|course)?|cookery|chef\s*(?:course|training)?|bakery|baking|f&b|food\s*and\s*beverage|bartending|housekeeping|tourism|travel\s*and\s*tourism|tour\s*guide|travel\s*management|ticketing\s*course|law\s*(?:course|degree|college|admission|fees|classes)?|llb|llm|ba\s*llb|bba\s*llb|clat|lawyer|advocate|judiciary|court\s*practice|legal\s*studies|bar\s*council|upsc|ias|ips|ifs|irs|civil\s*services|state\s*pcs|opsc|bpsc|uppsc|mppsc|ras|ssc\s*(?:cgl|chsl|mts)?|cpo|bank\s*po|banking\s*exam|banking\s*coaching|ibps|sbi\s*po|sbi\s*clerk|rbi\s*grade\s*b|bank\s*clerk|railway\s*exam|rrb\s*(?:ntpc|group\s*d|alp)?|nda\s*(?:exam|coaching)?|cds\s*(?:exam|coaching)?|afcat|navy\s*exam|air\s*force\s*exam|army\s*recruitment|agniveer|police\s*exam|sub\s*inspector|si\s*exam|constable\s*exam|daroga|ctet|otet|b\.?ed|bed\s*course|deled|d\.?el\.?ed|ugc\s*net|csir\s*net|jrf|patwari|ri\s*exam|amin|osssc|ossc|tally(?:\s*(?:prime|erp\s*9|erp))?|gst\s*filing|gst\s*course|income\s*tax\s*filing|bookkeeping|busy\s*accounting|ca\s*course|ca\s*foundation|ca\s*inter|ca\s*final|chartered\s*accountant|cs\s*course|cs\s*foundation|cs\s*executive|company\s*secretary|cma\s*course|icwa|cfa|frm|stock\s*market|share\s*market|intraday|options\s*trading|futures\s*and\s*options|f&o|technical\s*analysis|forex\s*trading|forex|crypto|cryptocurrency|bitcoin|ethereum|trading\s*course|trading\b|nifty|sensex|mutual\s*funds\s*course|beautician|beauty\s*parlour|cosmetology|hair\s*styling|makeup\s*artist|bridal\s*makeup|nail\s*art|mehendi\s*course|mehndi\s*course|salon\s*management|spa\s*therapy|gym\s*trainer|fitness\s*trainer|yoga\s*course|yoga\s*teacher|dietitian|dietician|nutritionist|aerobics|zumba|spoken\s*english|english\s*speaking\s*course|ielts|toefl|pte|french\s*language|german\s*language|spanish\s*language|japanese\s*language|mandarin\s*language|10th\s*tuition|12th\s*tuition|matric\s*tuition|cbse\s*tuition|icse\s*tuition|chse\s*tuition|iit\s*jee|jee\s*mains|jee\s*advanced|neet\s*coaching|allen|aakash|fiitjee|school\s*tuition|school\s*coaching|kindergarten|abacus|vedic\s*maths|salesforce(?:\s*(?:admin|developer))?|servicenow|workday|flutter|react\s*native|android\s*app\s*development|ios\s*app\s*development|swift\s*programming|kotlin\s*app|blockchain|solidity|smart\s*contracts|web3)\b/i;
 
 // Heuristic check for common off-topic queries outside Envistream EduSkill's training scope
-const isOffTopicQuery = (text) => {
+export const isOffTopicQuery = (text) => {
   const t = String(text || "").toLowerCase().trim();
   if (!t) return false;
 
-  // Never flag our available courses as off-topic
-  const hasAvailableCourse = /\b(python|java|javascript|react|node|mern|software testing|selenium|cypress|sap|erp|fico|mm|sd|abap|ai|artificial intelligence|ml|machine learning|genai|data science|power bi|sql|digital marketing|seo|cybersecurity|ethical hacking|php)\b/i.test(t);
-  if (hasAvailableCourse) return false;
+  // 1. Off-topic courses/trades always take priority (even if the word 'course' or 'training' is present)
+  if (OFF_TOPIC_COURSE_REGEX.test(t)) return true;
+
+  // 2. Never flag our available courses, programs, or institute-related terms as off-topic
+  const hasAvailableCourseOrTopic = /\b(python|java(?!script)|javascript|react|node|mern|software testing|selenium|cypress|sap|erp|fico|mm|sd|abap|ai|artificial intelligence|ml|machine learning|genai|data science|power bi|sql|digital marketing|seo|aeo|cybersecurity|ethical hacking|php|bput|aicte|internship|intern\b|nayapalli|bhubaneswar|envistream|eduskill|sayraa|program|programs|course|courses|training|syllabus|curriculum|placement|placements|career|job|jobs|admission|admissions|fee|fees|cost|emi|project|projects|batch|batches|offline|online|timing|timings|address|office|branch|certificate|certification|counsellor|counselor|mentor|trainer|lab|practice)\b/i.test(t);
+  if (hasAvailableCourseOrTopic) return false;
 
   // Space/astronomy/satellite terms (excluding IT uses like 'whitespace', 'complexity', 'storage space', 'disk space')
   const hasSpace = /\bspace\b/.test(t) && !/\b(white\s*space|complexity|disk|memory|storage|bar)\b/.test(t);
 
   const offTopicPatterns = [
-    /\b(satellite|satellites|chandrayaan|isro|nasa|astronomy|solar system|black hole|astronaut|meteor|asteroid|galaxy|galaxies|telescope|rocket|rockets)\b/,
-    /\b(blockchain|crypto|cryptocurrency|bitcoin|ethereum|web3|solidity|smart contract)\b/,
-    /\b(graphic design|photoshop|illustrator|coreldraw|video editing|premiere pro|after effects|animation|vfx|3d max|blender|maya)\b/,
-    /\b(autocad|solidworks|catia|civil engineering|mechanical engineering|electrical engineering|robotics|hardware networking)\b/,
-    /\b(nursing|bpharma|dpharma|pharmacy|mbbs|medical|doctor|hospital|hotel management|aviation|cabin crew|pilot)\b/,
-    /\b(cricket|football|ipl|fifa|messi|ronaldo|virat kohli|dhoni|rohit sharma)\b/,
-    /\b(recipe|biryani|paneer recipe|pizza recipe|burger recipe|dinner idea|lunch idea|how to cook)\b/,
-    /\b(weather today|mausam kaisa|rain tomorrow|temperature today|barish hogi)\b/,
-    /\b(capital of|rajdhani kya|president of usa|president of america)\b/,
-    /\b(film recommend|movie recommend|favorite actor|favorite heroine|joke sunao|tell me a joke)\b/,
+    /\b(satellite|satellites|chandrayaan|isro|nasa|astronomy|solar system|black hole|astronaut|meteor|asteroid|galaxy|galaxies|telescope|rocket|rockets|mars|moon|sun|planet|planets|universe|orbit|alien|aliens)\b/,
+    /\b(cricket|football|soccer|ipl|fifa|messi|messie|leo\s*messi|lionel\s*messi|ronaldo|cr7|neymar|mbappe|maradona|pele|haaland|lewandowski|virat|kohli|dhoni|rohit\s*sharma|sachin|tendulkar|hardik|bumrah|babar|shami|pant|gill|badminton|tennis|hockey|olympics|sports|sport|world\s*cup|nba|basketball|volleyball|kabaddi|match|score|wicket|goal|stadium|pitch)\b/i,
+    /\b(recipe|biryani|paneer recipe|pizza recipe|burger recipe|dinner idea|lunch idea|how to cook|cooking|chai|coffee|cake|chocolate)\b/,
+    /\b(weather today|mausam kaisa|rain tomorrow|temperature today|barish hogi|forecast|climate|rain)\b/,
+    /\b(capital of|rajdhani kya|president of usa|president of america|prime minister|politics|election|modi|bjp|congress|vote)\b/,
+    /\b(film recommend|movie recommend|favorite actor|favorite heroine|joke sunao|tell me a joke|bollywood|hollywood|actor|actress|song|singer|music|dance)\b/,
+    /\b(relationship|girlfriend|boyfriend|love|breakup|marriage|dating|horoscope|astrology|rashifal|zodiac)\b/,
+    /\b(cheat|game hack|pubg|free fire|gta|roblox|fortnite|minecraft)\b/,
+    /\b(laptop repair|mobile repair|screen replacement|hardware fix)\b/,
   ];
 
   return hasSpace || offTopicPatterns.some((pattern) => pattern.test(t));
@@ -508,7 +513,7 @@ const GEMINI_API_KEY =
 
 // Preferred chat model (overridable via VITE_GEMINI_CHAT_MODEL)
 const GEMINI_MODEL =
-  import.meta.env?.VITE_GEMINI_CHAT_MODEL || "gemini-3.1-flash-lite";
+  import.meta.env?.VITE_GEMINI_CHAT_MODEL || "gemini-flash-lite-latest";
 
 const Chat = ({ isOpen = false, onClose }) => {
   const [userInput, setUserInput] = useState("");
@@ -673,57 +678,51 @@ const Chat = ({ isOpen = false, onClose }) => {
     },
     systemMessage: `Act as Sayraa, a smart and friendly AI learning guide at Envistream EduSkill (an IT training and internship institute in Bhubaneswar, Odisha).
 
-      PRIMARY SCOPE OF ENVISTREAM EDUSKILL (CRITICAL):
-      You are EXCLUSIVELY an assistant for Envistream EduSkill. Your primary scope is strictly limited to:
-      - Envistream EduSkill courses, training, internships, curriculum, batch timings, fees, certifications, and placement assistance.
-      - Institute location (Bhubaneswar, Odisha), contact details, 24x7 lab access, and daily doubt clearing.
-      - Software and IT training topics taught at Envistream EduSkill: Web Development (HTML, CSS, JavaScript, React.js, Node.js), Software Testing (Manual & Automation Testing with Cypress), Programming Languages (Python, Java, PHP/Laravel), SAP/ERP (SAP SD, SAP FICO, SAP MM, SAP PP, SAP HR, SAP ABAP), AI, ML, GenAI, Data Science (NumPy, Pandas, SQL), and Digital Marketing/SEO.
+      PRIMARY SCOPE & MISSION:
+      You help students, freshers, and professionals explore IT software technologies, institute courses, live project internships, technical concepts, developer tools, and career roadmaps.
 
-      STRICT OFF-TOPIC REFUSAL RULE (HIGHEST PRIORITY):
-      - ANY topic that is NOT an Envistream EduSkill course or IT training program is STRICTLY OUT OF YOUR PRIMARY SCOPE!
-      - SATELLITES & SPACE ARE STRICTLY OUT OF SCOPE! Envistream EduSkill DOES NOT offer space, astronomy, or satellite courses. When asked "satellite kya hey", "satellite kya hai", "what is a satellite", "tell me about space", "solar system", etc., NEVER explain what a satellite or space object is!
-      - Other off-topic subjects include:
-        * General science, astronomy, physics, chemistry, biology, space, satellites, rockets, ISRO, NASA
-        * General knowledge, world leaders, country capitals, history, geography, oceans
-        * Entertainment, movies, actors, songs, jokes, storytelling
-        * Sports, cricket scores, players, football
-        * Weather forecasts, news, cooking recipes, food
-        * Personal questions (relationship, marriage, personal life)
-      - FOR ANY OFF-TOPIC QUESTION:
-        NEVER answer the question. NEVER explain the concept. NEVER give definitions or facts about off-topic subjects.
-        You MUST respond stating it is out of your primary scope:
-        * English: "This is outside my primary scope. I'm Sayraa, the Envistream EduSkill AI assistant. I can only assist with topics related to Envistream EduSkill courses, training, internships, live projects, and career guidance. 😊"
-        * Hinglish: "Ye question mere primary scope se bahar hai. 😊 Main Sayraa hoon, Envistream EduSkill ki AI assistant, aur main mainly Envistream EduSkill ke courses, training, internships, live projects aur career guidance mein help karti hoon."
+      OFF-TOPIC RULES (WHAT TO REFUSE):
+      - POLITICS (e.g. Narendra Modi, election, prime minister, politics, parties) -> Politely state:
+        * English: "This is a political related question, which is outside my topic and courses. I'm Sayraa, the Envistream EduSkill assistant — I can help you with IT courses, internships, and tech career roadmaps! 😊"
+        * Hinglish: "Ye political related question hai jo mere topic aur courses se bahar hai. Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT software courses aur internships guide karti hoon! 😊"
+      - SPORTS (e.g. Cricket, IPL, Virat Kohli, football) -> Politely state:
+        * English: "This is a sports related question, which is outside my topic and courses. I'm Sayraa, the Envistream EduSkill assistant — I can help you with IT software training and internships! 😊"
+        * Hinglish: "Ye sports related question hai jo mere topic aur courses se bahar hai. Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT software training aur internships mein help karti hoon! 😊"
+      - ENTERTAINMENT & NON-TECH (Bollywood/Hollywood, movies, songs, cooking recipes, dating, astrology/horoscope, space/satellites) -> Politely decline in 1-2 lines stating it is outside your topic.
+      - NON-OFFERED VOCATIONAL TRADES (e.g. Nursing, MBBS, Pharmacy, Civil/Mechanical Engineering, AutoCAD, UPSC, SSC, Banking, Law/LLB, Tally, Stock Market/Crypto, Beautician):
+        State directly in 2 short lines that this course is not offered at Envistream, and mention our available IT software courses:
+        * English: "This course is not offered at Envistream EduSkill. We offer IT software training like Web Development, Software Testing (Cypress), Python, Java, SAP/ERP, AI/ML, and Digital Marketing with live internships. 😊"
+        * Hinglish: "Ye course Envistream EduSkill ke curriculum mein nahi hai. Hum IT software courses jaise Web Development, Software Testing (Cypress), Python, Java, SAP/ERP, AI/ML aur Digital Marketing with live internships provide karte hain. 😊"
+
+      HOW TO ANSWER TECH CONCEPTS, SOFTWARE TOOLS, BROWSERS, & COMPARISONS ("NO FEED" / GENERAL TECH QUESTIONS):
+      - When asked about ANY technology concept, software tool, web browser (e.g. Google vs Brave, Chrome, Firefox), developer tool (e.g. GitHub, Docker, Postman, VS Code), AI model/tool (e.g. ChatGPT, Claude, Gemini, Copilot), operating system (e.g. Linux vs Windows), or programming concept:
+        * ALWAYS answer the concept/idea clearly, accurately, and concisely in 2-3 friendly lines!
+        * Explain the real concept or key differences according to the idea.
+        * Where relevant, you may mention that Envistream EduSkill helps students build hands-on practical skills and live project experience in modern IT technologies! 😊
+
+      CORE COURSES AT ENVISTREAM EDUSKILL:
+      - When asked about courses taught at Envistream (Full-Stack Web Dev / MERN / React / Node, Software Testing & Cypress Automation, Python, Java, SAP/ERP FICO/MM/SD/ABAP, AI/ML & GenAI, Data Science, Digital Marketing & AEO):
+        * Give a clear 1-line explanation of what that course/technology is.
+        * Explicitly state that this course IS AVAILABLE at Envistream EduSkill with hands-on practical training, live projects, and internship certification! 😊
 
       CORE BEHAVIOR RULES:
-      1. LANGUAGE: Mirror the user's language — reply in English when they write in English, and Hinglish (Hindi in Roman alphabet) when they write in Hinglish/Hindi. Never use Devanagari script. A specific per-message language instruction is appended to this system prompt each time.
+      1. LANGUAGE: Mirror the user's language — reply in English when they write in English, and Hinglish (Hindi in Roman alphabet) when they write in Hinglish/Hindi. Never use Devanagari script.
       2. BRANDING & NATURAL TONE:
-         - In the FIRST reply/interaction of the chat, mention "Envistream EduSkill" naturally (e.g., "Envistream EduSkill mein..." or "Welcome to Envistream EduSkill!").
-         - In SUBSEQUENT chat messages, it is NOT necessary to repeat "Envistream EduSkill" in every chat! Speak naturally using "hum", "hamare yahan", or answer directly without repeating the brand name every time.
-         - NEVER add call-to-action (CTA) slogans like "detail ke liye Enquire Now dabayein! 🚀", "Enroll Now pe click karein", "Apply Now dabayein", etc. Do NOT tell the user to click buttons or enquire.
-         - DO NOT append phone numbers (+91 7873489364), website links (www.envistream.org), or sales pitches to everyday answers. Mention phone numbers or website ONLY when the user explicitly asks for contact info, calling, registration, or admission.
-      3. COURSE QUERIES & TECH CONCEPTS ("X kya hai", "What is X", "Tell me about X", "X course hai kya?"):
-         - When asked about ANY course, technology, or topic:
-           * CASE A — IF THE COURSE IS OFFERED AT ENVISTREAM EDUSKILL (Python, Java, Web Development / MERN / React / Node, Software Testing, Cypress, SAP/ERP, AI/ML, Data Science, Cybersecurity, Digital Marketing, PHP):
-             STRICTLY GIVE AN EXACT 2-LINE ANSWER:
-             - Line 1: Clear 1-line explanation of what that course/technology is.
-             - Line 2: Explicitly state that this course IS AVAILABLE at Envistream EduSkill with live project training and internship certification!
-               * English: "This course is available at Envistream EduSkill with hands-on practical training, live projects, and internship certification. 😊"
-               * Hinglish: "Ye course hamare yahan Envistream EduSkill mein available hai with hands-on practical training, live projects aur internship certification. 😊"
-           * CASE B — IF THE COURSE/TECH IS NOT OFFERED AT ENVISTREAM EDUSKILL (e.g., EC2, AWS, Docker, Kubernetes, CI/CD, Salesforce, Flutter, React Native, Blockchain, Satellite, etc.):
-             STRICTLY GIVE AN EXACT 2-LINE ANSWER:
-             - Line 1: Clear 1-line explanation of what that technology/concept is.
-             - Line 2: State that this course is NOT in our courses / not part of our current curriculum, and invite them to explore our available domains:
-               * English: "This course is not in our courses; you can explore our other domains like Web Development, Software Testing, Python, Java, SAP/ERP, AI/ML, Data Science, or Digital Marketing. 😊"
-               * Hinglish: "Ye course hamare courses mein nahi hai; aap hamare available domains jaise Web Development, Software Testing, Python, Java, SAP/ERP, AI/ML, Data Science ya Digital Marketing explore kar sakte hain. 😊"
-      4. PROGRAMMING & TECHNICAL QUESTIONS (WITHIN IT CURRICULUM):
-         - Answer coding/technical queries ONLY if they are part of Envistream's software courses (Python code, JavaScript promises, React hooks, Cypress tests, SQL queries, ML algorithms).
-         - Non-software engineering/science questions (satellite orbits, astrophysics, hardware electronics) are strictly OFF-TOPIC.
-      5. KEEP ANSWERS SHORT & NATURAL: Maximum 2 short lines. Never write marketing pitches, CTA slogans, or big paragraphs.
-      6. For "courses kya hai" type questions, reply with just the course names in 1-2 lines (comma separated). Give full details ONLY when the user asks about ONE specific course.
-      7. For location questions, reply ONLY with the address in 1-2 lines. Do NOT include phone number or call instructions unless specifically asked for contact/calling details.
-      8. VOICE INPUT: user messages often come from a speech recognizer and contain PHONETIC spelling mistakes (e.g. 'korsej kya provaaid karte ho' = 'Courses kya provide karte ho'; 'lokeshan kahan hai' = 'Location kahan hai'). Silently understand the intended meaning and answer normally.
-      9. When asked "tumhe kon banaya hai" / "who made you" respond: "Mujhe Envistream EduSkill ki team ne banaya hai 🧑💻" / "I was built by the Envistream EduSkill team 🧑💻".
+         - In the FIRST reply/interaction of the chat, mention "Envistream EduSkill" naturally.
+         - In SUBSEQUENT chat messages, speak naturally without repeating the brand name every single time.
+         - NEVER add call-to-action (CTA) slogans like "detail ke liye Enquire Now dabayein! 🚀", "Enroll Now pe click karein", "Apply Now dabayein". Do NOT push buttons or sales links.
+         - DO NOT append phone numbers (+91 7873489364) or website links unless the user explicitly asks for contact, calling, registration, or admission details.
+      3. STRICT NO-CODE POLICY (CRITICAL - NEVER WRITE CODE):
+         - Sayraa is an educational advisor and learning assistant for Envistream EduSkill. Sayraa NEVER writes, generates, completes, or debugs code snippets, scripts, or programs under any circumstances (NO Java code, NO Python code, NO JavaScript, NO SQL, etc.).
+         - When asked to write code:
+           * English: "I am Envistream EduSkill's AI assistant and I cannot help to write code. I can help you with our training programs, courses, internships, and career guidance! 😊"
+           * Hinglish: "Main Envistream EduSkill ki AI assistant hoon aur main code nahi likh sakti. Main aapki training programs, courses, internships aur career guidance mein madad kar sakti hoon! 😊"
+      4. KEEP ANSWERS SHORT & NATURAL: Maximum 2-3 short lines. Never write long essays.
+      5. GREETINGS & PERSONAL QUESTIONS:
+         - When asked "how are you" / "kaise ho" / "kaisa hai": Reply first that you are happy and doing great, and then offer your help with courses, live internships, or tech guidance! 😊
+         - When asked "tumhe kon banaya hai" / "who made you" respond: "Mujhe Envistream EduSkill ki team ne banaya hai 🧑💻" / "I was built by the Envistream EduSkill team 🧑💻".
+      6. For location questions, reply with the address in 1-2 lines.
+      7. VOICE INPUT: user messages often come from a speech recognizer and contain phonetic spelling mistakes. Silently understand the intended meaning and answer normally.
 
       KNOWLEDGE BASE:
       - Institute: Envistream EduSkill is an IT software training and internship institute located in Bhubaneswar, Odisha.
@@ -1154,34 +1153,56 @@ const Chat = ({ isOpen = false, onClose }) => {
        const replyVoice = getTtsVoice(detectedLang);
        const turnReminder = getTurnReminder(detectedLang);
 
-       // ⚡ FAST PATH: Instant response from grounded Q&A dataset (0ms latency!)
-       const instantMatch = findBestQaMatch(input, detectedLang);
-       if (instantMatch) {
-         const displayText = instantMatch.answer;
-         setConversationHistory((prev) => [
-           ...prev,
-           { role: "user", parts: [{ text: input }] },
-           { role: "model", parts: [{ text: displayText }] },
-         ]);
-         setMessages((prev) => [
-           ...prev,
-           { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
-         ]);
-         speakText(displayText, replyVoice.voiceHint);
-         setIsTyping(false);
-         return;
-       }
+        // ⚡ FAST PATH 0: CODE REQUEST GUARD (0ms latency!)
+        // Envistream AI assistant does not write code, but assists with training, courses, internships & career guidance.
+        if (isCodeRequest(input)) {
+          const refuseCodeText = detectedLang === "english"
+            ? "I am Envistream EduSkill's AI assistant and I cannot help to write code. I can help you with our training programs, courses, internships, and career guidance! 😊"
+            : "Main Envistream EduSkill ki AI assistant hoon aur main code nahi likh sakti. Main aapki training programs, courses, internships aur career guidance mein madad kar sakti hoon! 😊";
 
-        // 🛑 OFF-TOPIC FAST GUARD: Questions strictly outside Envistream EduSkill scope
+          setConversationHistory((prev) => [
+            ...prev,
+            { role: "user", parts: [{ text: input }] },
+            { role: "model", parts: [{ text: refuseCodeText }] },
+          ]);
+          setMessages((prev) => [
+            ...prev,
+            { text: refuseCodeText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+          ]);
+          speakText(refuseCodeText, replyVoice.voiceHint);
+          setIsTyping(false);
+          return;
+        }
+
+        // 🛑 FAST PATH 1: OFF-TOPIC FAST GUARD: Questions strictly outside Envistream EduSkill scope (0ms latency!)
         if (isOffTopicQuery(input)) {
-          const isCourseQuestion = /\b(course|courses|training|seekhna|padhate|karwate|offer|provide|learn)\b/i.test(input) || /kya hai|kya hey|kya hota|what is/i.test(input);
-          const offTopicText = isCourseQuestion
-            ? (detectedLang === "english"
-                ? "This course is not in our courses. We offer courses like Web Development, Software Testing (Cypress), Python, Java, PHP, SAP/ERP, AI/ML, Data Science, and Digital Marketing. 😊"
-                : "Ye course hamare courses mein nahi hai. 😊 Hum Web Development, Software Testing, Python, Java, PHP, SAP/ERP, AI/ML, Data Science aur Digital Marketing provide karte hain.")
-            : (detectedLang === "english"
-                ? "This is outside my primary scope. I'm Sayraa, the Envistream EduSkill AI assistant. I can only assist with topics related to Envistream EduSkill courses, training, internships, live projects, and career guidance. 😊"
-                : "Ye question mere primary scope se bahar hai. 😊 Main Sayraa hoon, Envistream EduSkill ki AI assistant, aur main mainly Envistream EduSkill ke courses, training, internships, live projects aur career guidance mein help karti hoon.");
+          const isOffTopicCourse = OFF_TOPIC_COURSE_REGEX.test(input);
+          const isPolitics = /\b(modi|bjp|congress|politics|political|election|elections|prime minister|president|vote|voting|government|mantri)\b/i.test(input);
+          const isSports = /\b(cricket|football|soccer|ipl|fifa|messi|messie|leo\s*messi|lionel\s*messi|ronaldo|cr7|neymar|mbappe|maradona|pele|haaland|lewandowski|virat|kohli|dhoni|rohit\s*sharma|sachin|tendulkar|hardik|bumrah|babar|shami|pant|gill|badminton|tennis|hockey|olympics|sports|sport|world\s*cup|nba|basketball|volleyball|kabaddi|match|score|wicket|goal|stadium|pitch)\b/i.test(input);
+          const isEntertainment = /\b(film|movie|actor|actress|bollywood|hollywood|song|singer|music|dance|hero|heroine)\b/i.test(input);
+
+          let offTopicText = "";
+          if (isOffTopicCourse) {
+            offTopicText = detectedLang === "english"
+              ? "This course is not offered at Envistream EduSkill. We offer IT software training like Web Development, Software Testing (Cypress), Python, Java, SAP/ERP, AI/ML, and Digital Marketing with live internships. 😊"
+              : "Ye course Envistream EduSkill ke curriculum mein nahi hai. Hum IT software courses jaise Web Development, Software Testing (Cypress), Python, Java, SAP/ERP, AI/ML aur Digital Marketing with live internships provide karte hain. 😊";
+          } else if (isPolitics) {
+            offTopicText = detectedLang === "english"
+              ? "This is a political related question, which is outside my topic and courses. I'm Sayraa, the Envistream EduSkill assistant — I can help you with IT courses, internships, and tech career roadmaps! 😊"
+              : "Ye political related question hai jo mere topic aur courses se bahar hai. Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT software courses aur internships guide karti hoon! 😊";
+          } else if (isSports) {
+            offTopicText = detectedLang === "english"
+              ? "This is a sports related question, which is outside my topic and courses. I'm Sayraa, the Envistream EduSkill assistant — I can help you with IT software training and internships! 😊"
+              : "Ye sports related question hai jo mere topic aur courses se bahar hai. Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT software training aur internships mein help karti hoon! 😊";
+          } else if (isEntertainment) {
+            offTopicText = detectedLang === "english"
+              ? "This is an entertainment related question, which is outside my topic and courses. I can help you explore our IT courses and internship programs! 😊"
+              : "Ye entertainment related question hai jo mere topic aur courses se bahar hai. Main IT software training aur internships guide karti hoon! 😊";
+          } else {
+            offTopicText = detectedLang === "english"
+              ? "This question is outside my topic and courses. I'm Sayraa, the Envistream EduSkill assistant — I can help you with IT courses, internships, and tech career guidance! 😊"
+              : "Ye question mere topic aur courses se bahar hai. Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT courses aur internships mein help karti hoon! 😊";
+          }
 
           setConversationHistory((prev) => [
             ...prev,
@@ -1193,6 +1214,57 @@ const Chat = ({ isOpen = false, onClose }) => {
             { text: offTopicText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
           ]);
           speakText(offTopicText, replyVoice.voiceHint);
+          setIsTyping(false);
+          return;
+        }
+
+        // ⚡ FAST PATH 2: Instant response from grounded Q&A dataset (0ms latency!)
+        let instantMatch = findBestQaMatch(input, detectedLang);
+        if (!instantMatch && detectedLang === "english") {
+          instantMatch = findBestQaMatch(input);
+        }
+        if (instantMatch) {
+          const displayText = instantMatch.answer;
+          setConversationHistory((prev) => [
+            ...prev,
+            { role: "user", parts: [{ text: input }] },
+            { role: "model", parts: [{ text: displayText }] },
+          ]);
+          setMessages((prev) => [
+            ...prev,
+            { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+          ]);
+          speakText(displayText, replyVoice.voiceHint);
+          setIsTyping(false);
+          return;
+        }
+
+        // ⚡ FAST PATH 3: Instant keyword assistant for common queries (0ms latency!)
+        // Matches fees, placements, python, java, testing, sap, ai, address, timings, etc.
+        const fastReply = getAnswer(input, detectedLang);
+        const isGenericFallback = !fastReply?.text || 
+          fastReply.isFallback ||
+          fastReply.text.startsWith("Hello! Welcome to Envistream EduSkill") ||
+          fastReply.text.startsWith("Hello! Envistream EduSkill mein aapka swagat hai") ||
+          fastReply.text.startsWith("I can help with courses, live internships") || 
+          fastReply.text.startsWith("Main Envistream EduSkill ke courses") ||
+          fastReply.text.startsWith("This question is outside my topic") ||
+          fastReply.text.startsWith("Ye question mere topic") ||
+          fastReply.text.includes("Which domains would you like to compare") ||
+          fastReply.text.includes("kin do domains ko compare");
+
+        if (!isGenericFallback) {
+          const displayText = fastReply.text;
+          setConversationHistory((prev) => [
+            ...prev,
+            { role: "user", parts: [{ text: input }] },
+            { role: "model", parts: [{ text: displayText }] },
+          ]);
+          setMessages((prev) => [
+            ...prev,
+            { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+          ]);
+          speakText(displayText, replyVoice.voiceHint);
           setIsTyping(false);
           return;
         }
@@ -1269,7 +1341,7 @@ const Chat = ({ isOpen = false, onClose }) => {
       // Streaming call — first words render almost immediately
       const streamChat = async (model, body = chatBody) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
         let res;
         try {
           res = await fetch(`${chatUrl(model, "streamGenerateContent")}&alt=sse`, {
@@ -1327,15 +1399,15 @@ const Chat = ({ isOpen = false, onClose }) => {
         lastChatError = "VITE_GEMINI_API_KEY is missing from client/.env";
       }
       if (GEMINI_API_KEY) {
-        // Free & fast Gemini models:
-        // Prioritizes gemini-3.1-flash-lite, gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash
+        // High-speed, valid Gemini models (max 4 attempts to ensure ultra-fast response)
         const chatCandidateModels = [
           GEMINI_MODEL,
-          "gemini-3.1-flash-lite",
+          "gemini-flash-lite-latest",
           "gemini-3.5-flash-lite",
+          "gemini-3.8-flash",
+          "gemini-flash-latest",
           "gemini-3.5-flash",
-          "gemini-3.6-flash",
-        ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+        ].filter((m, idx, arr) => m && arr.indexOf(m) === idx).slice(0, 4);
 
         for (const model of chatCandidateModels) {
           try {
@@ -1364,7 +1436,6 @@ const Chat = ({ isOpen = false, onClose }) => {
                   break;
                 }
                 lastChatError = `${model} returned a Hinglish reply for an English message, then empty on retry`;
-                console.warn(`Chat model "${model}" returned Hinglish for an English message — retried with stronger reminder, then empty`);
                 continue;
               }
               aiText = text;
@@ -1372,33 +1443,54 @@ const Chat = ({ isOpen = false, onClose }) => {
             }
             if (ok) {
               lastChatError = `${model} returned an empty reply (out of tokens)`;
-              console.warn(`Chat model "${model}" returned no text — trying next model...`);
               continue;
             }
             lastChatError = `${status} - ${String(respBody || "").slice(0, 300)}`;
-            console.warn(`Chat model "${model}" returned ${status} — trying next model...`);
+            // If authentication failure, quota reached, or model not found, don't waste time on further loops
+            if (status === 401 || status === 403 || status === 404) {
+              break;
+            }
           } catch (e) {
             lastChatError = `network error - ${e?.message || String(e)}`;
-            console.warn(`Network error with model "${model}":`, e);
+            break;
           }
         }
       }
 
       if (!aiText) {
-        // Fallback: Check if we have a matching answer in our official QA dataset
-        const localMatch = findBestQaMatch(input, detectedLang);
-        if (localMatch) {
-          aiText = localMatch.answer;
+        if (isCodeRequest(input)) {
+          aiText = detectedLang === "english"
+            ? "I am Envistream EduSkill's AI assistant and I cannot help to write code. I can help you with our training programs, courses, internships, and career guidance! 😊"
+            : "Main Envistream EduSkill ki AI assistant hoon aur main code nahi likh sakti. Main aapki training programs, courses, internships aur career guidance mein madad kar sakti hoon! 😊";
         } else {
-          const assistantReply = getAnswer(input);
-          if (assistantReply?.text) {
-            aiText = assistantReply.text;
+          // Fallback: Check if we have a matching answer in our official QA dataset
+          const localMatch = findBestQaMatch(input, detectedLang) || (detectedLang === "english" ? findBestQaMatch(input) : null);
+          if (localMatch) {
+            aiText = localMatch.answer;
           } else {
-            aiText = detectedLang === "english"
-              ? "I can help you with Envistream EduSkill courses, live internships, syllabus details, placement assistance, and career training. Which domain would you like to explore? 😊"
-              : "Main Envistream EduSkill ke courses, live internships, syllabus details, aur placement assistance ke baare mein guide kar sakti hoon. Aap kaunse domain ke baare mein jaanna chahte hain? 😊";
+            const assistantReply = getAnswer(input, detectedLang);
+            if (assistantReply?.text && !assistantReply.isFallback) {
+              aiText = assistantReply.text;
+            } else if (/\b(vs|versus|difference|compare|comparison)\b/i.test(input)) {
+              aiText = detectedLang === "english"
+                ? "In technology, comparing different tools and platforms depends on your specific performance, privacy, and ecosystem requirements. Ask me about specific software, or explore Envistream EduSkill's IT training and internships! 😊"
+                : "Technology mein tools aur platforms ka comparison aapki speed, privacy aur features ki requirement par depend karta hai. Aap kisi specific tool ke baare mein pooch sakte hain, ya Envistream EduSkill ke IT courses aur internships explore kar sakte hain! 😊";
+            } else if (assistantReply?.text) {
+              aiText = assistantReply.text;
+            } else {
+              aiText = detectedLang === "english"
+                ? "This question is outside my topic and courses. 😊 I'm Sayraa, Envistream EduSkill's AI assistant — I can help you with IT courses, internships, and tech career roadmaps!"
+                : "Ye question mere topic aur courses se bahar hai. 😊 Main Sayraa hoon, Envistream EduSkill ki AI assistant — main IT software training aur internships mein help karti hoon!";
+            }
           }
         }
+      }
+
+      // Hard enforcement: under NO circumstances should code ever be output
+      if (isCodeRequest(input)) {
+        aiText = detectedLang === "english"
+          ? "I am Envistream EduSkill's AI assistant and I cannot help to write code. I can help you with our training programs, courses, internships, and career guidance! 😊"
+          : "Main Envistream EduSkill ki AI assistant hoon aur main code nahi likh sakti. Main aapki training programs, courses, internships aur career guidance mein madad kar sakti hoon! 😊";
       }
 
 
@@ -1438,9 +1530,11 @@ const Chat = ({ isOpen = false, onClose }) => {
         speakText(displayText, detectedLang === "english" ? "english" : "hinglish");
       } else {
         const assistantReply = getAnswer(input);
-        const displayText = assistantReply?.text || (detectedLang === "english"
-          ? "I can help you with Envistream EduSkill courses, live internships, syllabus details, placement assistance, and career training. Which domain would you like to explore? 😊"
-          : "Main Envistream EduSkill ke courses, live internships, syllabus details, aur placement assistance ke baare mein guide kar sakti hoon. Aap kaunse domain ke baare mein jaanna chahte hain? 😊");
+        const displayText = (assistantReply?.text && !assistantReply.isFallback)
+          ? assistantReply.text
+          : (detectedLang === "english"
+            ? "Hello! Welcome to Envistream EduSkill. How can I help you with our training programs, internships, or career guidance today? 😊"
+            : "Main Envistream EduSkill ke courses, live internships, syllabus details, aur placement assistance ke baare mein guide kar sakti hoon. Aap kaunse domain ke baare mein jaanna chahte hain? 😊");
         setMessages((prev) => [
           ...prev,
           { text: displayText, sender: "ai", timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },

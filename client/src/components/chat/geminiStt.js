@@ -23,7 +23,7 @@ const GEMINI_API_KEY =
   DEFAULT_FALLBACK_KEY;
 
 // Preferred STT model (overridable via VITE_GEMINI_STT_MODEL)
-const GEMINI_MODEL = import.meta.env?.VITE_GEMINI_STT_MODEL || "gemini-3.5-flash";
+const GEMINI_MODEL = import.meta.env?.VITE_GEMINI_STT_MODEL || "gemini-1.5-flash";
 
 export const isGeminiSTTAvailable = () => Boolean(GEMINI_API_KEY);
 
@@ -253,14 +253,12 @@ export const transcribeWithGemini = async (blob) => {
     }
   };
 
-  // Free Gemini models for STT transcription, ordered with user-requested models
+  // Valid, high-speed Gemini models for STT transcription
   const candidateModels = [
     GEMINI_MODEL,
-    "gemini-3.5-flash",
-    "gemini-3.6-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
-  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx).slice(0, 2);
 
   let lastStatus = 0;
   let lastBody = "";

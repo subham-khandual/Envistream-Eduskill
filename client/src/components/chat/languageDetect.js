@@ -11,20 +11,23 @@ const DEVANAGARI_RE = /[\u0900-\u097F]/;
 // words that are ALSO valid English (main, fees, batch, ya, ...) so a pure
 // English question like "What are the fees?" is never misread as Hinglish.
 const HINGLISH_MARKERS = new Set([
-  "kya", "kyu", "kyun", "kaise", "kaisa", "kaisi", "kaha", "kahan", "kab",
-  "kaun", "kon", "kitna", "kitne", "hai", "hain", "ho", "hoga", "hogi",
+  "kya", "kay", "kyaa", "kye", "ky", "kia", "kiya",
+  "kyu", "kyun", "kaise", "kaisa", "kaisi", "kaha", "kahan", "kab",
+  "kaun", "kon", "kitna", "kitne", "kitni", "hai", "hain", "ho", "hoga", "hogi",
   "hota", "hoti", "hote", "kar", "karo", "karna", "karni", "karte", "karke",
+  "kare", "karen", "karein", "lagta", "lagti", "lagte", "h", "he",
   "mujhe", "muje", "mein", "mera", "meri", "aap", "ap", "tum",
   "tera", "teri", "hamara", "humara", "iska", "uska", "isko", "usko",
   "nahi", "nahin", "haan", "ji", "bhai", "didi", "yaar",
   "namaste", "namaskar", "shukriya", "dhanyavad", "achha", "acha",
   "theek", "thik", "chalega", "bhaiya", "kripya",
   "chahiye", "chaiye", "chahta", "chahti", "sakta", "sakti", "sakhte",
-  "batao", "batana", "poochho", "puchho", "pucho",
+  "batao", "batana", "bata", "bataye", "bataiye", "batado", "btao", "poochho", "puchho", "pucho",
   "paise", "shuru", "khatam", "jaldi", "abhi", "phir",
   "fir", "bhi", "aur", "sab", "kuch", "koi", "sath", "saath",
   "madad", "jaanna", "janna", "seekhna", "seekh", "padhai", "padho",
-  "samajh", "bilkul", "zaroor", "thoda", "bahut", "bohot",
+  "samajh", "bilkul", "zaroor", "thoda", "bahut", "bohot", "cheez", "matlab",
+  "ek", "likh", "likho", "likhiye", "likhna", "likhdo", "banao", "banaiye", "kardo", "karega", "karegi", "karenge",
 ]);
 
 // English words that indicate a pure-English message even when short.
@@ -33,7 +36,7 @@ const ENGLISH_MARKERS = new Set([
   "can", "could", "would", "should", "do", "does", "did", "please",
   "tell", "about", "course", "courses", "internship", "fee", "fees",
   "admission", "enroll", "placement", "training", "provide", "offer",
-  "hello", "hi", "hey", "thanks", "thank", "want", "need", "know",
+  "hello", "hi", "thanks", "thank", "want", "need", "know",
 ]);
 
 /**
@@ -57,9 +60,18 @@ export const detectUserLanguage = (text) => {
 
   let hinglishHits = 0;
   let englishHits = 0;
-  for (const w of words) {
-    if (HINGLISH_MARKERS.has(w)) hinglishHits++;
-    else if (ENGLISH_MARKERS.has(w)) englishHits++;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (HINGLISH_MARKERS.has(w)) {
+      hinglishHits++;
+    } else if (w === "hey") {
+      // In Hinglish, "hey" after another word (e.g. "internship kay hey", "kya hey", "kaisa hey")
+      // is the transliteration of Hindi "hai". Only at index 0 without Hindi words could it be greeting "hey".
+      if (i > 0) hinglishHits++;
+      else englishHits++;
+    } else if (ENGLISH_MARKERS.has(w)) {
+      englishHits++;
+    }
   }
 
   if (hinglishHits > 0) return "hinglish";
