@@ -1,37 +1,67 @@
-# Envistream EduSkill
+# Envistream EduSkill — AI-Powered Education & Internship Platform
 
-A full redesign and rebuild of **[envistream.org](https://www.envistream.org/)** — the training & internship platform of Envistream Smartech Pvt. Ltd, Bhubaneswar — as a modern, fast, and eye-catching full-stack web application.
+A modern education and internship platform redesign focused on creating a smarter student experience, digital enrollment flow, AI-assisted course guidance, and better career-oriented learning journeys.
 
-Envistream EduSkill provides training and internship programs for B.Tech (CSE) students and BBA/MBA graduates in Software Testing, Cypress Automation, ERP/SAP, Web Development (Node.js & React.js), Artificial Intelligence, and Digital Marketing (SEO/AEO) — combined with live projects, placement assistance, and mentorship from industry professionals.
+**Developer:** [@subham-khandual](https://github.com/subham-khandual)
 
-This repository replaces the current static PHP site with a React + Node.js + PostgreSQL application, adding an AI-powered course assistant, an online application/enrollment flow, and an admin dashboard for managing leads and content.
+**Keywords:** education platform, internship platform, AI education assistant, student enrollment system, course platform, training and internship portal, web development learning, career-oriented education, AI-powered student support
 
-## Why this rebuild
+## Overview
 
-The current site is a static, template-driven PHP site. This rebuild aims to:
+**Envistream EduSkill** is a redesign and rebuild of Envistream’s training and internship platform. The goal is to modernize the platform, improve the user experience, and add digital workflows for course enrollment, AI-powered guidance, and a more scalable education experience.
 
-- Give the brand a modern, animated, "eye-catchy" look and feel (see [`docs/DESIGN.md`](docs/DESIGN.md))
-- Turn static "Enroll Now" links into a real application/enrollment funnel with a database behind it
-- Add an AI assistant that can answer prospective students' questions about courses, duration, and eligibility
-- Make course, project, and testimonial content manageable without editing HTML/PHP
-- Improve SEO, page speed, and mobile experience
+This project is built to support:
+- Prospective students
+- Training and internship seekers
+- Educational administrators
+- Course and enrollment workflows
+
+## Why this rebuild matters
+
+The previous platform was static and limited in interactivity. This rebuild modernizes the experience by adding:
+- Better user engagement and visual design
+- Real application and enrollment funnel
+- AI assistant for course and eligibility questions
+- Easier administration and content management
+- Improved SEO, performance, and mobile experience
+
+## Features
+
+- ✅ AI-powered course assistant
+- ✅ Student enrollment and application flow
+- ✅ Course and internship information portal
+- ✅ Modern landing pages and UI redesign
+- ✅ Admin dashboard support
+- ✅ Database-backed enrollment management
+- ✅ Better SEO and performance optimization
+- ✅ Responsive design for mobile and desktop users
+
+## Tech Stack
+
+- React
+- Node.js
+- PostgreSQL
+- Prisma
+- Express
+- Vite
+- AI-powered assistant integration
 
 ## Documentation
 
-| Doc | Purpose |
+| Document | Purpose |
 | --- | --- |
-| [`AGENTS.md`](AGENTS.md) | Instructions for AI coding agents / vibe-coding tools working in this repo |
-| [`docs/PRD.md`](docs/PRD.md) | Product requirements — goals, users, scope |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | Visual design system, pages, and UX direction |
-| [`docs/TECH-STACK.md`](docs/TECH-STACK.md) | Full technology stack and rationale |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture and repo structure |
-| [`docs/DATABASE.md`](docs/DATABASE.md) | Database schema (Prisma models) |
-| [`docs/API.md`](docs/API.md) | REST API reference |
-| [`docs/FEATURES.md`](docs/FEATURES.md) | Feature list, mapped to the current site plus new additions |
-| [`docs/SECURITY.md`](docs/SECURITY.md) | Security model and practices |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Environments and deployment process |
+| `AGENTS.md` | AI coding instructions |
+| `docs/PRD.md` | Product requirements |
+| `docs/DESIGN.md` | Design system and UX guidelines |
+| `docs/TECH-STACK.md` | Stack rationale |
+| `docs/ARCHITECTURE.md` | System architecture |
+| `docs/DATABASE.md` | Database schema |
+| `docs/API.md` | API reference |
+| `docs/FEATURES.md` | Features and roadmap |
+| `docs/SECURITY.md` | Security overview |
+| `docs/DEPLOYMENT.md` | Deployment process |
 
-## Quick start (once scaffolded)
+## Quick Start
 
 ```bash
 # 1. Clone and install
@@ -50,9 +80,24 @@ npx prisma migrate dev --schema apps/server/prisma/schema.prisma
 npm run dev
 ```
 
-- Frontend (Vite/React): `http://localhost:5173`
-- Backend (Express): `http://localhost:4000`
+Frontend: http://localhost:5173  
+Backend: http://localhost:4000
 
 ## Status
 
-🚧 Pre-build — this repo currently holds planning documentation only. Implementation is being done via AI-assisted ("vibe coding") development, guided by the docs above.
+🚧 Pre-build / planning documentation repo with implementation underway using AI-assisted development workflows.
+
+## Developer
+
+Created by **@subham-khandual**  
+GitHub: https://github.com/subham-khandual
+
+## SEO Summary
+
+Envistream EduSkill is an AI-powered education and internship platform designed to modernize training programs, improve student enrollment, and deliver a smarter learning experience with course guidance, digital workflows, and career-focused education tools.
+
+---
+
+**Project Name:** Envistream EduSkill  
+**Category:** Education Platform, Internship Platform, AI Learning Assistant  
+**Audience:** Students, training institutions, recruiters, educational admins
